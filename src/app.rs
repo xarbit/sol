@@ -2,14 +2,17 @@ use crate::cache::CalendarCache;
 use crate::calendars::{CalendarManager, LocalCalendar};
 use crate::components;
 use crate::fl;
+use crate::menu_action::MenuAction;
 use crate::message::Message;
 use crate::storage::LocalStorage;
 use crate::views::{self, CalendarView};
 use chrono::Datelike;
 use cosmic::app::Core;
+use cosmic::iced::{keyboard, keyboard::Key};
 use cosmic::iced::window;
-use cosmic::widget::{self, about};
+use cosmic::widget::{self, about, menu};
 use cosmic::{Application, Element};
+use std::collections::HashMap;
 
 const APP_ID: &str = "io.github.xarbit.SolCalendar";
 
@@ -28,6 +31,7 @@ pub struct CosmicCalendar {
     pub color_picker_open: Option<String>,
     pub cache: CalendarCache,
     pub about: about::About,
+    pub key_binds: HashMap<menu::KeyBind, MenuAction>,
 }
 
 impl CosmicCalendar {
@@ -54,6 +58,45 @@ impl CosmicCalendar {
             .license(fl!("about-license"))
             .links([(fl!("about-repository"), "https://github.com/xarbit/sol")]);
 
+        // Initialize keyboard shortcuts
+        let mut key_binds = HashMap::new();
+
+        // New Event: Ctrl+N
+        key_binds.insert(
+            menu::KeyBind {
+                modifiers: vec![menu::key_bind::Modifier::Ctrl],
+                key: Key::Character("n".into()),
+            },
+            MenuAction::NewEvent,
+        );
+
+        // Month View: Ctrl+1
+        key_binds.insert(
+            menu::KeyBind {
+                modifiers: vec![menu::key_bind::Modifier::Ctrl],
+                key: Key::Character("1".into()),
+            },
+            MenuAction::ViewMonth,
+        );
+
+        // Week View: Ctrl+2
+        key_binds.insert(
+            menu::KeyBind {
+                modifiers: vec![menu::key_bind::Modifier::Ctrl],
+                key: Key::Character("2".into()),
+            },
+            MenuAction::ViewWeek,
+        );
+
+        // Day View: Ctrl+3
+        key_binds.insert(
+            menu::KeyBind {
+                modifiers: vec![menu::key_bind::Modifier::Ctrl],
+                key: Key::Character("3".into()),
+            },
+            MenuAction::ViewDay,
+        );
+
         CosmicCalendar {
             core,
             current_view: CalendarView::Month,
@@ -67,6 +110,7 @@ impl CosmicCalendar {
             color_picker_open: None,
             cache,
             about,
+            key_binds,
         }
     }
 
@@ -165,7 +209,7 @@ impl Application for CosmicCalendar {
     }
 
     fn header_start(&self) -> Vec<Element<'_, Self::Message>> {
-        components::render_header_start()
+        components::render_header_start(&self.key_binds)
     }
 
     fn header_end(&self) -> Vec<Element<'_, Self::Message>> {
@@ -191,5 +235,59 @@ impl Application for CosmicCalendar {
             |url| Message::LaunchUrl(url.to_string()),
             Message::ToggleContextDrawer,
         ))
+    }
+
+    fn subscription(&self) -> cosmic::iced::Subscription<Self::Message> {
+        struct KeyboardEvents;
+
+        cosmic::iced::event::listen_with(|event, _status, _window_id| {
+            if let cosmic::iced::Event::Keyboard(keyboard::Event::KeyPressed {
+                key,
+                modifiers,
+                ..
+            }) = event
+            {
+                // Convert modifiers to menu modifiers
+                let mut menu_modifiers = Vec::new();
+                if modifiers.control() {
+                    menu_modifiers.push(menu::key_bind::Modifier::Ctrl);
+                }
+                if modifiers.shift() {
+                    menu_modifiers.push(menu::key_bind::Modifier::Shift);
+                }
+                if modifiers.alt() {
+                    menu_modifiers.push(menu::key_bind::Modifier::Alt);
+                }
+                if modifiers.logo() {
+                    menu_modifiers.push(menu::key_bind::Modifier::Super);
+                }
+
+                let key_bind = menu::KeyBind {
+                    modifiers: menu_modifiers,
+                    key: key.clone(),
+                };
+
+                // Check for Ctrl+N (New Event)
+                if matches!(key, Key::Character(ref s) if s == "n") && modifiers.control() {
+                    return Some(Message::NewEvent);
+                }
+
+                // Check for Ctrl+1 (Month View)
+                if matches!(key, Key::Character(ref s) if s == "1") && modifiers.control() {
+                    return Some(Message::ChangeView(CalendarView::Month));
+                }
+
+                // Check for Ctrl+2 (Week View)
+                if matches!(key, Key::Character(ref s) if s == "2") && modifiers.control() {
+                    return Some(Message::ChangeView(CalendarView::Week));
+                }
+
+                // Check for Ctrl+3 (Day View)
+                if matches!(key, Key::Character(ref s) if s == "3") && modifiers.control() {
+                    return Some(Message::ChangeView(CalendarView::Day));
+                }
+            }
+            None
+        })
     }
 }
