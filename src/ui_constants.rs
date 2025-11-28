@@ -40,6 +40,8 @@ pub const WEEKDAYS_FULL: [&str; 7] = [
 pub const WEEKDAYS_SHORT: [&str; 7] = ["M", "T", "W", "T", "F", "S", "S"];
 
 // Font sizes
+#[allow(dead_code)] // For future use
 pub const FONT_SIZE_SMALL: u16 = 11;
 pub const FONT_SIZE_MEDIUM: u16 = 12;
+#[allow(dead_code)] // For future use
 pub const FONT_SIZE_BODY: u16 = 14;

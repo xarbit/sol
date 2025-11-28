@@ -344,8 +344,8 @@ impl CosmicCalendar {
                 // Use calendar cache module
                 views::render_month_view(self.cache.current_state(), self.selected_day)
             },
-            CalendarView::Week => self.render_week_view(),
-            CalendarView::Day => self.render_day_view(),
+            CalendarView::Week => views::render_week_view(),
+            CalendarView::Day => views::render_day_view(),
         };
 
         column()
@@ -358,33 +358,4 @@ impl CosmicCalendar {
             .into()
     }
 
-    fn render_week_view(&self) -> Element<'_, Message> {
-        let content = column()
-            .spacing(20)
-            .padding(40)
-            .push(widget::text::title2("Week View"))
-            .push(widget::text("Week view coming soon..."));
-
-        container(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .center_x(Length::Fill)
-            .center_y(Length::Fill)
-            .into()
-    }
-
-    fn render_day_view(&self) -> Element<'_, Message> {
-        let content = column()
-            .spacing(20)
-            .padding(40)
-            .push(widget::text::title2("Day View"))
-            .push(widget::text("Day view coming soon..."));
-
-        container(content)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .center_x(Length::Fill)
-            .center_y(Length::Fill)
-            .into()
-    }
 }

@@ -5,64 +5,30 @@ use cosmic::{widget, Element};
 use crate::components::render_day_cell;
 use crate::message::Message;
 use crate::models::CalendarState;
+use crate::ui_constants::{FONT_SIZE_MEDIUM, PADDING_SMALL, SPACING_TINY, WEEKDAYS_FULL};
 
 pub fn render_month_view(
     calendar_state: &CalendarState,
     selected_day: Option<u32>,
 ) -> Element<'static, Message> {
-    let mut grid = column().spacing(1).padding(20);
+    let mut grid = column().spacing(SPACING_TINY).padding(20);
 
-    // Weekday headers
-    let header_row = row()
-        .spacing(1)
-        .push(
-            container(widget::text("Monday").size(12))
+    // Weekday headers - use iterator to avoid repetition
+    let mut header_row = row().spacing(SPACING_TINY);
+    for weekday in WEEKDAYS_FULL {
+        header_row = header_row.push(
+            container(widget::text(weekday).size(FONT_SIZE_MEDIUM))
                 .width(Length::Fill)
-                .padding(8)
-                .center_x(Length::Fill),
-        )
-        .push(
-            container(widget::text("Tuesday").size(12))
-                .width(Length::Fill)
-                .padding(8)
-                .center_x(Length::Fill),
-        )
-        .push(
-            container(widget::text("Wednesday").size(12))
-                .width(Length::Fill)
-                .padding(8)
-                .center_x(Length::Fill),
-        )
-        .push(
-            container(widget::text("Thursday").size(12))
-                .width(Length::Fill)
-                .padding(8)
-                .center_x(Length::Fill),
-        )
-        .push(
-            container(widget::text("Friday").size(12))
-                .width(Length::Fill)
-                .padding(8)
-                .center_x(Length::Fill),
-        )
-        .push(
-            container(widget::text("Saturday").size(12))
-                .width(Length::Fill)
-                .padding(8)
-                .center_x(Length::Fill),
-        )
-        .push(
-            container(widget::text("Sunday").size(12))
-                .width(Length::Fill)
-                .padding(8)
+                .padding(PADDING_SMALL)
                 .center_x(Length::Fill),
         );
+    }
 
     grid = grid.push(header_row);
 
     // Use pre-calculated weeks from CalendarState cache
     for week in &calendar_state.weeks {
-        let mut week_row = row().spacing(1).height(Length::Fill);
+        let mut week_row = row().spacing(SPACING_TINY).height(Length::Fill);
         for day_opt in week {
             if let Some(day) = day_opt {
                 let is_today = calendar_state.is_today(*day);
