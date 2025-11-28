@@ -7,6 +7,7 @@ pub struct CalendarState {
     pub month: u32,
     pub weeks: Vec<Vec<Option<u32>>>,
     pub today: (i32, u32, u32), // (year, month, day)
+    pub month_year_text: String, // Pre-formatted "Month Year" text
 }
 
 impl CalendarState {
@@ -49,12 +50,14 @@ impl CalendarState {
         }
 
         let today = chrono::Local::now();
+        let month_year_text = format!("{}", first_day.format("%B %Y"));
 
         CalendarState {
             year,
             month,
             weeks,
             today: (today.year(), today.month(), today.day()),
+            month_year_text,
         }
     }
 

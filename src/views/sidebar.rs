@@ -6,6 +6,7 @@ use crate::calendars::CalendarSource;
 use crate::components::{render_calendar_list, render_mini_calendar};
 use crate::message::Message;
 use crate::models::CalendarState;
+use crate::ui_constants::{SIDEBAR_WIDTH, SPACING_LARGE, PADDING_STANDARD};
 
 pub fn render_sidebar<'a>(
     calendar_state: &CalendarState,
@@ -21,8 +22,8 @@ pub fn render_sidebar<'a>(
     // Scrollable top section with calendars
     let scrollable_content = scrollable(
         column()
-            .spacing(20)
-            .padding(16)
+            .spacing(SPACING_LARGE)
+            .padding(PADDING_STANDARD)
             .push(calendars_section)
     );
 
@@ -30,7 +31,7 @@ pub fn render_sidebar<'a>(
     let bottom_section = column()
         .spacing(0)
         .push(divider::horizontal::default())
-        .push(container(mini_calendar).padding(16));
+        .push(container(mini_calendar).padding(PADDING_STANDARD));
 
     // Combine: scrollable top + fixed bottom
     let sidebar_layout = column()
@@ -39,7 +40,7 @@ pub fn render_sidebar<'a>(
         .push(bottom_section);
 
     container(sidebar_layout)
-        .width(Length::Fixed(280.0))
+        .width(Length::Fixed(SIDEBAR_WIDTH))
         .height(Length::Fill)
         .into()
 }

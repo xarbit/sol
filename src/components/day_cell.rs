@@ -3,10 +3,7 @@ use cosmic::widget::{container, mouse_area};
 use cosmic::{widget, Element};
 
 use crate::message::Message;
-
-// Pre-defined border radius to avoid allocation on every render
-const BORDER_RADIUS: [f32; 4] = [4.0, 4.0, 4.0, 4.0];
-const LIGHT_BORDER_COLOR: Color = Color::from_rgba(0.5, 0.5, 0.5, 0.2);
+use crate::ui_constants::{BORDER_RADIUS, PADDING_DAY_CELL, COLOR_DAY_CELL_BORDER};
 
 pub fn render_day_cell(
     day: u32,
@@ -24,7 +21,7 @@ pub fn render_day_cell(
     let styled_container = if is_today {
         // Today: outlined with accent color border (not filled)
         container(day_text)
-            .padding([4, 8, 0, 0])
+            .padding(PADDING_DAY_CELL)
             .width(Length::Fill)
             .height(Length::Fill)
             .align_x(alignment::Horizontal::Right)
@@ -40,7 +37,7 @@ pub fn render_day_cell(
     } else if is_selected {
         // Selected: filled with accent color
         container(day_text)
-            .padding([4, 8, 0, 0])
+            .padding(PADDING_DAY_CELL)
             .width(Length::Fill)
             .height(Length::Fill)
             .align_x(alignment::Horizontal::Right)
@@ -55,14 +52,14 @@ pub fn render_day_cell(
     } else {
         // Normal day - light border
         container(day_text)
-            .padding([4, 8, 0, 0])
+            .padding(PADDING_DAY_CELL)
             .width(Length::Fill)
             .height(Length::Fill)
             .align_x(alignment::Horizontal::Right)
             .style(|_theme: &cosmic::Theme| container::Style {
                 background: None,
                 border: Border {
-                    color: LIGHT_BORDER_COLOR.into(),
+                    color: COLOR_DAY_CELL_BORDER.into(),
                     width: 1.0,
                     radius: BORDER_RADIUS.into(),
                 },

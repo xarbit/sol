@@ -3,6 +3,11 @@ use cosmic::widget::{button, column, container, grid, row};
 use cosmic::{widget, Element};
 
 use crate::message::Message;
+use crate::ui_constants::{
+    COLOR_BUTTON_SIZE_SMALL, COLOR_BUTTON_SIZE_MEDIUM, COLOR_BUTTON_SIZE_LARGE,
+    SPACING_COLOR_GRID, SPACING_COLOR_CONTAINER, PADDING_STANDARD,
+    COLOR_DEFAULT_GRAY, COLOR_BORDER_LIGHT, COLOR_BORDER_SELECTED, BORDER_RADIUS
+};
 
 /// Size of the color indicator button
 pub const COLOR_INDICATOR_SIZE: f32 = 24.0;
@@ -47,7 +52,7 @@ pub fn render_color_indicator<'a>(
     current_color: &str,
     size: f32,
 ) -> Element<'a, Message> {
-    let color = parse_hex_color(current_color).unwrap_or(Color::from_rgb8(107, 114, 128));
+    let color = parse_hex_color(current_color).unwrap_or(COLOR_DEFAULT_GRAY);
 
     button::custom(
         container(widget::text(""))
@@ -59,7 +64,7 @@ pub fn render_color_indicator<'a>(
                     border: Border {
                         radius: (size / 2.0).into(),
                         width: 2.0,
-                        color: Color::from_rgba(0.0, 0.0, 0.0, 0.2),
+                        color: COLOR_BORDER_LIGHT,
                     },
                     ..Default::default()
                 }
@@ -72,28 +77,28 @@ pub fn render_color_indicator<'a>(
 
 /// Render a color picker palette with all available colors
 pub fn render_color_palette<'a>(calendar_id: String) -> Element<'a, Message> {
-    let mut color_grid = column().spacing(8);
+    let mut color_grid = column().spacing(SPACING_COLOR_CONTAINER);
 
     // Split colors into rows of 6
     for row_colors in CALENDAR_COLORS.chunks(6) {
-        let mut color_row = row().spacing(8);
+        let mut color_row = row().spacing(SPACING_COLOR_CONTAINER);
 
         for (hex, name) in row_colors {
-            let color = parse_hex_color(hex).unwrap_or(Color::from_rgb8(107, 114, 128));
+            let color = parse_hex_color(hex).unwrap_or(COLOR_DEFAULT_GRAY);
             let hex_owned = hex.to_string();
             let calendar_id_clone = calendar_id.clone();
 
             let color_button = button::custom(
                 container(widget::text(""))
-                    .width(32.0)
-                    .height(32.0)
+                    .width(COLOR_BUTTON_SIZE_MEDIUM)
+                    .height(COLOR_BUTTON_SIZE_MEDIUM)
                     .style(move |_theme: &cosmic::Theme| {
                         cosmic::iced::widget::container::Style {
                             background: Some(cosmic::iced::Background::Color(color)),
                             border: Border {
-                                radius: 16.0.into(),
+                                radius: (COLOR_BUTTON_SIZE_MEDIUM / 2.0).into(),
                                 width: 2.0,
-                                color: Color::from_rgba(0.0, 0.0, 0.0, 0.2),
+                                color: COLOR_BORDER_LIGHT,
                             },
                             ..Default::default()
                         }
@@ -104,8 +109,8 @@ pub fn render_color_palette<'a>(calendar_id: String) -> Element<'a, Message> {
 
             color_row = color_row.push(
                 container(color_button)
-                    .width(Length::Fixed(36.0))
-                    .height(Length::Fixed(36.0))
+                    .width(Length::Fixed(COLOR_BUTTON_SIZE_LARGE))
+                    .height(Length::Fixed(COLOR_BUTTON_SIZE_LARGE))
                     .center_x(Length::Fill)
                     .center_y(Length::Fill)
             );
@@ -115,7 +120,7 @@ pub fn render_color_palette<'a>(calendar_id: String) -> Element<'a, Message> {
     }
 
     container(color_grid)
-        .padding(16)
+        .padding(PADDING_STANDARD)
         .into()
 }
 
@@ -136,33 +141,33 @@ pub fn render_quick_color_picker<'a>(
         ["#F59E0B", "#FBBF24", "#F97316", "#EF4444", "#DC2626"],
     ];
 
-    let mut color_grid = column().spacing(6);
+    let mut color_grid = column().spacing(SPACING_COLOR_GRID);
 
     for row_colors in color_rows {
-        let mut color_row = row().spacing(6);
+        let mut color_row = row().spacing(SPACING_COLOR_GRID);
 
         for hex in row_colors {
-            let color = parse_hex_color(hex).unwrap_or(Color::from_rgb8(107, 114, 128));
+            let color = parse_hex_color(hex).unwrap_or(COLOR_DEFAULT_GRAY);
             let hex_owned = hex.to_string();
             let calendar_id_clone = calendar_id.clone();
             let is_selected = current_color == hex;
 
             let border_width = if is_selected { 3.0 } else { 2.0 };
             let border_color = if is_selected {
-                Color::from_rgb8(0, 0, 0)
+                COLOR_BORDER_SELECTED
             } else {
-                Color::from_rgba(0.0, 0.0, 0.0, 0.2)
+                COLOR_BORDER_LIGHT
             };
 
             let color_button = button::custom(
                 container(widget::text(""))
-                    .width(28.0)
-                    .height(28.0)
+                    .width(COLOR_BUTTON_SIZE_SMALL)
+                    .height(COLOR_BUTTON_SIZE_SMALL)
                     .style(move |_theme: &cosmic::Theme| {
                         cosmic::iced::widget::container::Style {
                             background: Some(cosmic::iced::Background::Color(color)),
                             border: Border {
-                                radius: 14.0.into(),
+                                radius: (COLOR_BUTTON_SIZE_SMALL / 2.0).into(),
                                 width: border_width,
                                 color: border_color,
                             },

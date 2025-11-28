@@ -4,46 +4,45 @@ use cosmic::{widget, Element};
 
 use crate::message::Message;
 use crate::models::CalendarState;
+use crate::ui_constants::{
+    SPACING_MEDIUM, SPACING_XXS, SPACING_SMALL, SPACING_MINI_CALENDAR,
+    PADDING_TINY, FONT_SIZE_SMALL, FONT_SIZE_BODY, MINI_CALENDAR_DAY_BUTTON_SIZE,
+    ICON_PREVIOUS, ICON_NEXT, WEEKDAYS_SHORT
+};
 
 pub fn render_mini_calendar(
     calendar_state: &CalendarState,
     selected_day: Option<u32>,
 ) -> Element<'static, Message> {
-    let date = chrono::NaiveDate::from_ymd_opt(calendar_state.year, calendar_state.month, 1).unwrap();
-    let month_year = format!("{}", date.format("%B %Y"));
+    let month_year_text = calendar_state.month_year_text.clone();
 
     let header = row()
-        .spacing(8)
+        .spacing(SPACING_MEDIUM)
         .push(
-            button::icon(widget::icon::from_name("go-previous-symbolic"))
+            button::icon(widget::icon::from_name(ICON_PREVIOUS))
                 .on_press(Message::MiniCalendarPrevMonth)
-                .padding(4),
+                .padding(PADDING_TINY),
         )
-        .push(container(widget::text::body(month_year).size(14)).width(Length::Fill))
+        .push(container(widget::text::body(month_year_text).size(FONT_SIZE_BODY)).width(Length::Fill))
         .push(
-            button::icon(widget::icon::from_name("go-next-symbolic"))
+            button::icon(widget::icon::from_name(ICON_NEXT))
                 .on_press(Message::MiniCalendarNextMonth)
-                .padding(4),
+                .padding(PADDING_TINY),
         );
 
-    let mut grid = column().spacing(4);
+    let mut grid = column().spacing(SPACING_SMALL);
 
     // Weekday headers (abbreviated)
-    let header_row = row()
-        .spacing(2)
-        .push(widget::text("M").width(Length::Fill).size(11))
-        .push(widget::text("T").width(Length::Fill).size(11))
-        .push(widget::text("W").width(Length::Fill).size(11))
-        .push(widget::text("T").width(Length::Fill).size(11))
-        .push(widget::text("F").width(Length::Fill).size(11))
-        .push(widget::text("S").width(Length::Fill).size(11))
-        .push(widget::text("S").width(Length::Fill).size(11));
+    let mut header_row = row().spacing(SPACING_XXS);
+    for weekday in WEEKDAYS_SHORT {
+        header_row = header_row.push(widget::text(weekday).width(Length::Fill).size(FONT_SIZE_SMALL));
+    }
 
     grid = grid.push(header_row);
 
     // Use pre-calculated weeks from CalendarState
     for week in &calendar_state.weeks {
-        let mut week_row = row().spacing(2);
+        let mut week_row = row().spacing(SPACING_XXS);
         for day_opt in week {
             if let Some(day) = day_opt {
                 let is_today = calendar_state.is_today(*day);
@@ -52,26 +51,26 @@ pub fn render_mini_calendar(
                 let day_button = if is_today {
                     widget::button::suggested((*day).to_string())
                         .on_press(Message::SelectDay(*day))
-                        .padding(4)
-                        .width(Length::Fixed(32.0))
+                        .padding(PADDING_TINY)
+                        .width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
                 } else if is_selected {
                     widget::button::standard((*day).to_string())
                         .on_press(Message::SelectDay(*day))
-                        .padding(4)
-                        .width(Length::Fixed(32.0))
+                        .padding(PADDING_TINY)
+                        .width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
                 } else {
                     widget::button::text((*day).to_string())
                         .on_press(Message::SelectDay(*day))
-                        .padding(4)
-                        .width(Length::Fixed(32.0))
+                        .padding(PADDING_TINY)
+                        .width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
                 };
                 week_row = week_row.push(day_button);
             } else {
-                week_row = week_row.push(container(widget::text("")).width(Length::Fixed(32.0)));
+                week_row = week_row.push(container(widget::text("")).width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE)));
             }
         }
         grid = grid.push(week_row);
     }
 
-    column().spacing(12).push(header).push(grid).into()
+    column().spacing(SPACING_MINI_CALENDAR).push(header).push(grid).into()
 }

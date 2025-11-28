@@ -5,13 +5,13 @@ use cosmic::{widget, Element};
 use crate::components::render_day_cell;
 use crate::message::Message;
 use crate::models::CalendarState;
-use crate::ui_constants::{FONT_SIZE_MEDIUM, PADDING_SMALL, SPACING_TINY, WEEKDAYS_FULL};
+use crate::ui_constants::{FONT_SIZE_MEDIUM, PADDING_SMALL, PADDING_MONTH_GRID, SPACING_TINY, WEEKDAYS_FULL};
 
 pub fn render_month_view(
     calendar_state: &CalendarState,
     selected_day: Option<u32>,
 ) -> Element<'static, Message> {
-    let mut grid = column().spacing(SPACING_TINY).padding(20);
+    let mut grid = column().spacing(SPACING_TINY).padding(PADDING_MONTH_GRID);
 
     // Weekday headers - use iterator to avoid repetition
     let mut header_row = row().spacing(SPACING_TINY);

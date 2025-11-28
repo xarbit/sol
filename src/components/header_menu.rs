@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use crate::menu_action::MenuAction;
 use crate::message::Message;
-use crate::ui_constants::{ICON_SEARCH, ICON_SIDEBAR};
+use crate::ui_constants::{ICON_SEARCH, ICON_SIDEBAR, MENU_ITEM_HEIGHT, MENU_ITEM_WIDTH, MENU_SPACING};
 
 const MENU_ID: &str = "sol-calendar-menu";
 
@@ -19,9 +19,9 @@ pub fn render_header_start<'a>(
             .on_press(Message::ToggleSidebar)
             .into(),
         widget::responsive_menu_bar()
-            .item_height(menu::ItemHeight::Dynamic(40))
-            .item_width(menu::ItemWidth::Uniform(240))
-            .spacing(4.0)
+            .item_height(menu::ItemHeight::Dynamic(MENU_ITEM_HEIGHT))
+            .item_width(menu::ItemWidth::Uniform(MENU_ITEM_WIDTH))
+            .spacing(MENU_SPACING)
             .into_element(
                 core,
                 key_binds,

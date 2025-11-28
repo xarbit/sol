@@ -4,7 +4,7 @@ use cosmic::{widget, Element};
 
 use crate::fl;
 use crate::message::Message;
-use crate::ui_constants::{ICON_NEXT, ICON_PREVIOUS};
+use crate::ui_constants::{ICON_NEXT, ICON_PREVIOUS, SPACING_MEDIUM, SPACING_SMALL, PADDING_SMALL, PADDING_STANDARD};
 use crate::views::CalendarView;
 
 /// Render the calendar toolbar with navigation and view switcher
@@ -13,24 +13,24 @@ pub fn render_toolbar<'a>(
     current_view: CalendarView,
 ) -> Element<'a, Message> {
     let toolbar_left = row()
-        .spacing(8)
+        .spacing(SPACING_MEDIUM)
         .push(widget::button::standard(fl!("nav-today")).on_press(Message::Today))
         .push(
             button::icon(widget::icon::from_name(ICON_PREVIOUS))
                 .on_press(Message::PreviousPeriod)
-                .padding(8)
+                .padding(PADDING_SMALL)
         )
         .push(
             button::icon(widget::icon::from_name(ICON_NEXT))
                 .on_press(Message::NextPeriod)
-                .padding(8)
+                .padding(PADDING_SMALL)
         )
         .push(widget::text::title4(period_text));
 
     let view_switcher = render_view_switcher(current_view);
 
     row()
-        .padding(16)
+        .padding(PADDING_STANDARD)
         .push(toolbar_left)
         .push(container(widget::text("")).width(Length::Fill))
         .push(view_switcher)
@@ -40,7 +40,7 @@ pub fn render_toolbar<'a>(
 /// Render the view switcher (Day/Week/Month buttons)
 fn render_view_switcher(current_view: CalendarView) -> Element<'static, Message> {
     row()
-        .spacing(4)
+        .spacing(SPACING_SMALL)
         .push(
             if current_view == CalendarView::Day {
                 widget::button::suggested(fl!("view-day")).on_press(Message::ChangeView(CalendarView::Day))

@@ -4,6 +4,7 @@ use cosmic::{widget, Element};
 use crate::calendars::CalendarSource;
 use crate::components::{render_color_indicator, render_quick_color_picker, COLOR_INDICATOR_SIZE};
 use crate::message::Message;
+use crate::ui_constants::{SPACING_MEDIUM, PADDING_MEDIUM, FONT_SIZE_BODY, PADDING_COLOR_PICKER_NESTED};
 
 /// Render the list of calendars with checkboxes and color pickers
 pub fn render_calendar_list<'a>(
@@ -11,9 +12,9 @@ pub fn render_calendar_list<'a>(
     color_picker_open: Option<&String>,
 ) -> Element<'a, Message> {
     let mut calendar_list = column()
-        .spacing(8)
-        .padding(12)
-        .push(widget::text::body("Calendars").size(14));
+        .spacing(SPACING_MEDIUM)
+        .padding(PADDING_MEDIUM)
+        .push(widget::text::body("Calendars").size(FONT_SIZE_BODY));
 
     for calendar in calendars {
         let info = calendar.info();
@@ -28,7 +29,7 @@ pub fn render_calendar_list<'a>(
         );
 
         let calendar_row = row()
-            .spacing(8)
+            .spacing(SPACING_MEDIUM)
             .push(widget::checkbox("", is_enabled).on_toggle(move |_| {
                 Message::ToggleCalendar(info.id.clone())
             }))
@@ -43,7 +44,7 @@ pub fn render_calendar_list<'a>(
 
             calendar_list = calendar_list.push(
                 container(color_picker)
-                    .padding([4, 0, 4, 36]) // Indent to align with calendar name
+                    .padding(PADDING_COLOR_PICKER_NESTED)
             );
         }
     }

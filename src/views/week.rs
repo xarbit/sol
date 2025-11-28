@@ -3,13 +3,14 @@ use cosmic::widget::{column, container};
 use cosmic::{widget, Element};
 
 use crate::message::Message;
+use crate::ui_constants::{SPACING_LARGE, PADDING_LARGE};
 
 // Week view for future implementation
 #[allow(dead_code)]
 pub fn render_week_view() -> Element<'static, Message> {
     let content = column()
-        .spacing(20)
-        .padding(40)
+        .spacing(SPACING_LARGE)
+        .padding(PADDING_LARGE)
         .push(widget::text::title2("Week View"))
         .push(widget::text("Week view coming soon..."));
 
