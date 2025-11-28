@@ -1,7 +1,7 @@
 /// UI constants for consistent styling across the application
 
 // Layout dimensions
-pub const SIDEBAR_WIDTH: f32 = 280.0;
+pub const SIDEBAR_WIDTH: f32 = 280.0; // Used in layout.rs
 pub const MINI_CALENDAR_DAY_BUTTON_SIZE: f32 = 32.0;
 
 // Spacing values

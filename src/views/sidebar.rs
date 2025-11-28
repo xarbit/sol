@@ -1,33 +1,22 @@
 use cosmic::iced::Length;
-use cosmic::widget::{column, container, divider, row, scrollable};
-use cosmic::{widget, Element};
+use cosmic::widget::{column, container, divider, scrollable};
+use cosmic::Element;
 
-use crate::components::render_mini_calendar;
+use crate::calendars::CalendarSource;
+use crate::components::{render_calendar_list, render_mini_calendar};
 use crate::message::Message;
 use crate::models::CalendarState;
 
-pub fn render_sidebar(
+pub fn render_sidebar<'a>(
     calendar_state: &CalendarState,
+    calendars: &'a [Box<dyn CalendarSource>],
     selected_day: Option<u32>,
-) -> Element<'static, Message> {
+    color_picker_open: Option<&'a String>,
+) -> Element<'a, Message> {
     let mini_calendar = render_mini_calendar(calendar_state, selected_day);
 
-    let calendars_section = column()
-        .spacing(8)
-        .padding(12)
-        .push(widget::text::body("Calendars").size(14))
-        .push(
-            row()
-                .spacing(8)
-                .push(widget::checkbox("", true))
-                .push(widget::text("Personal")),
-        )
-        .push(
-            row()
-                .spacing(8)
-                .push(widget::checkbox("", true))
-                .push(widget::text("Work")),
-        );
+    // Use the calendar list component
+    let calendars_section = render_calendar_list(calendars, color_picker_open);
 
     // Scrollable top section with calendars
     let scrollable_content = scrollable(
