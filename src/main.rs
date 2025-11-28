@@ -9,10 +9,12 @@ use chrono::Datelike;
 use cosmic::app::{Core, Settings};
 use cosmic::iced::{alignment, Background, Border, Color, Length, Shadow, Vector};
 use cosmic::iced::widget::stack;
-use cosmic::widget::{self, button, column, container, divider, mouse_area, row, scrollable};
+use cosmic::widget::{self, button, column, container, divider, row};
 use cosmic::{Application, Element};
+use message::Message;
 use models::CalendarState;
 use storage::LocalStorage;
+use views::CalendarView;
 
 const APP_ID: &str = "io.github.xarbit.SolCalendar";
 
@@ -55,36 +57,6 @@ impl Default for CosmicCalendar {
         }
     }
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum CalendarView {
-    Month,
-    Week,
-    Day,
-}
-
-impl Default for CalendarView {
-    fn default() -> Self {
-        CalendarView::Month
-    }
-}
-
-#[derive(Debug, Clone)]
-enum Message {
-    ChangeView(CalendarView),
-    PreviousPeriod,
-    NextPeriod,
-    Today,
-    SelectDay(u32),
-    ToggleSidebar,
-    ToggleSearch,
-    MiniCalendarPrevMonth,
-    MiniCalendarNextMonth,
-    NewEvent,
-    Settings,
-    About,
-}
-
 
 impl Application for CosmicCalendar {
     type Executor = cosmic::executor::Default;
@@ -220,6 +192,8 @@ impl Application for CosmicCalendar {
                         } else {
                             self.current_month -= 1;
                         }
+                        // Update cache after month change
+                        self.update_cache();
                     }
                     CalendarView::Week => {
                         // Week navigation logic
@@ -238,6 +212,8 @@ impl Application for CosmicCalendar {
                         } else {
                             self.current_month += 1;
                         }
+                        // Update cache after month change
+                        self.update_cache();
                     }
                     CalendarView::Week => {
                         // Week navigation logic
@@ -252,6 +228,8 @@ impl Application for CosmicCalendar {
                 self.current_year = now.year();
                 self.current_month = now.month();
                 self.selected_day = Some(now.day());
+                // Update cache after date change
+                self.update_cache();
             }
             Message::SelectDay(day) => {
                 self.selected_day = Some(day);
@@ -314,151 +292,13 @@ impl CosmicCalendar {
     }
 
     fn render_sidebar(&self) -> Element<'_, Message> {
-        let mini_calendar = self.render_mini_calendar();
-
-        let calendars_section = column()
-            .spacing(8)
-            .padding(12)
-            .push(widget::text::body("Calendars").size(14))
-            .push(
-                row()
-                    .spacing(8)
-                    .push(widget::checkbox("", true))
-                    .push(widget::text("Personal"))
-            )
-            .push(
-                row()
-                    .spacing(8)
-                    .push(widget::checkbox("", true))
-                    .push(widget::text("Work"))
-            );
-
-        let sidebar_content = column()
-            .spacing(20)
-            .padding(16)
-            .push(mini_calendar)
-            .push(divider::horizontal::default())
-            .push(calendars_section);
-
-        container(scrollable(sidebar_content))
-            .width(Length::Fixed(280.0))
-            .height(Length::Fill)
-            .into()
-    }
-
-    fn render_mini_calendar(&self) -> Element<'_, Message> {
-        let date = chrono::NaiveDate::from_ymd_opt(self.current_year, self.current_month, 1).unwrap();
-        let month_year = format!("{}", date.format("%B %Y"));
-
-        let header = row()
-            .spacing(8)
-            .push(
-                button::icon(widget::icon::from_name("go-previous-symbolic"))
-                    .on_press(Message::MiniCalendarPrevMonth)
-                    .padding(4)
-            )
-            .push(
-                container(widget::text::body(month_year).size(14))
-                    .width(Length::Fill)
-            )
-            .push(
-                button::icon(widget::icon::from_name("go-next-symbolic"))
-                    .on_press(Message::MiniCalendarNextMonth)
-                    .padding(4)
-            );
-
-        let first_day = chrono::NaiveDate::from_ymd_opt(self.current_year, self.current_month, 1).unwrap();
-        let first_weekday = first_day.weekday().num_days_from_monday();
-
-        let days_in_month = if self.current_month == 12 {
-            chrono::NaiveDate::from_ymd_opt(self.current_year + 1, 1, 1)
-                .unwrap()
-                .signed_duration_since(first_day)
-                .num_days()
+        // Use cached calendar state and views module
+        if let Some(ref cache) = self.calendar_cache {
+            views::render_sidebar(cache, self.selected_day)
         } else {
-            chrono::NaiveDate::from_ymd_opt(self.current_year, self.current_month + 1, 1)
-                .unwrap()
-                .signed_duration_since(first_day)
-                .num_days()
-        };
-
-        let mut grid = column().spacing(4);
-
-        // Weekday headers (abbreviated)
-        let header_row = row()
-            .spacing(2)
-            .push(widget::text("M").width(Length::Fill).size(11))
-            .push(widget::text("T").width(Length::Fill).size(11))
-            .push(widget::text("W").width(Length::Fill).size(11))
-            .push(widget::text("T").width(Length::Fill).size(11))
-            .push(widget::text("F").width(Length::Fill).size(11))
-            .push(widget::text("S").width(Length::Fill).size(11))
-            .push(widget::text("S").width(Length::Fill).size(11));
-
-        grid = grid.push(header_row);
-
-        // Calendar days
-        let mut weeks = vec![];
-        let mut current_week = vec![];
-
-        for _ in 0..first_weekday {
-            current_week.push(None);
+            // Fallback if cache not available (shouldn't happen)
+            container(widget::text("Loading sidebar...")).into()
         }
-
-        for day in 1..=days_in_month {
-            current_week.push(Some(day as u32));
-            if current_week.len() == 7 {
-                weeks.push(current_week.clone());
-                current_week.clear();
-            }
-        }
-
-        if !current_week.is_empty() {
-            while current_week.len() < 7 {
-                current_week.push(None);
-            }
-            weeks.push(current_week);
-        }
-
-        let today = chrono::Local::now();
-        let is_current_month = today.year() == self.current_year && today.month() == self.current_month;
-
-        for week in weeks {
-            let mut week_row = row().spacing(2);
-            for day_opt in week {
-                if let Some(day) = day_opt {
-                    let is_today = is_current_month && today.day() == day;
-                    let is_selected = self.selected_day == Some(day);
-
-                    let day_button = if is_today {
-                        widget::button::suggested(day.to_string())
-                            .on_press(Message::SelectDay(day))
-                            .padding(4)
-                            .width(Length::Fixed(32.0))
-                    } else if is_selected {
-                        widget::button::standard(day.to_string())
-                            .on_press(Message::SelectDay(day))
-                            .padding(4)
-                            .width(Length::Fixed(32.0))
-                    } else {
-                        widget::button::text(day.to_string())
-                            .on_press(Message::SelectDay(day))
-                            .padding(4)
-                            .width(Length::Fixed(32.0))
-                    };
-                    week_row = week_row.push(day_button);
-                } else {
-                    week_row = week_row.push(container(widget::text("")).width(Length::Fixed(32.0)));
-                }
-            }
-            grid = grid.push(week_row);
-        }
-
-        column()
-            .spacing(12)
-            .push(header)
-            .push(grid)
-            .into()
     }
 
     fn render_main_content(&self) -> Element<'_, Message> {
@@ -516,7 +356,15 @@ impl CosmicCalendar {
             .push(view_switcher);
 
         let calendar_view = match self.current_view {
-            CalendarView::Month => self.render_month_view(),
+            CalendarView::Month => {
+                // Use cached calendar state
+                if let Some(ref cache) = self.calendar_cache {
+                    views::render_month_view(cache, self.selected_day)
+                } else {
+                    // Fallback if cache not available (shouldn't happen)
+                    container(widget::text("Loading...")).into()
+                }
+            },
             CalendarView::Week => self.render_week_view(),
             CalendarView::Day => self.render_day_view(),
         };
@@ -526,161 +374,6 @@ impl CosmicCalendar {
             .push(toolbar)
             .push(divider::horizontal::default())
             .push(calendar_view)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into()
-    }
-
-    fn render_month_view(&self) -> Element<'_, Message> {
-        let first_day = chrono::NaiveDate::from_ymd_opt(self.current_year, self.current_month, 1).unwrap();
-        let first_weekday = first_day.weekday().num_days_from_monday();
-
-        let days_in_month = if self.current_month == 12 {
-            chrono::NaiveDate::from_ymd_opt(self.current_year + 1, 1, 1)
-                .unwrap()
-                .signed_duration_since(first_day)
-                .num_days()
-        } else {
-            chrono::NaiveDate::from_ymd_opt(self.current_year, self.current_month + 1, 1)
-                .unwrap()
-                .signed_duration_since(first_day)
-                .num_days()
-        };
-
-        let mut grid = column().spacing(1).padding(20);
-
-        // Weekday headers
-        let header_row = row()
-            .spacing(1)
-            .push(container(widget::text("Monday").size(12)).width(Length::Fill).padding(8).center_x(Length::Fill))
-            .push(container(widget::text("Tuesday").size(12)).width(Length::Fill).padding(8).center_x(Length::Fill))
-            .push(container(widget::text("Wednesday").size(12)).width(Length::Fill).padding(8).center_x(Length::Fill))
-            .push(container(widget::text("Thursday").size(12)).width(Length::Fill).padding(8).center_x(Length::Fill))
-            .push(container(widget::text("Friday").size(12)).width(Length::Fill).padding(8).center_x(Length::Fill))
-            .push(container(widget::text("Saturday").size(12)).width(Length::Fill).padding(8).center_x(Length::Fill))
-            .push(container(widget::text("Sunday").size(12)).width(Length::Fill).padding(8).center_x(Length::Fill));
-
-        grid = grid.push(header_row);
-
-        // Calendar days
-        let mut weeks = vec![];
-        let mut current_week = vec![];
-
-        for _ in 0..first_weekday {
-            current_week.push(None);
-        }
-
-        for day in 1..=days_in_month {
-            current_week.push(Some(day as u32));
-            if current_week.len() == 7 {
-                weeks.push(current_week.clone());
-                current_week.clear();
-            }
-        }
-
-        if !current_week.is_empty() {
-            while current_week.len() < 7 {
-                current_week.push(None);
-            }
-            weeks.push(current_week);
-        }
-
-        let today = chrono::Local::now();
-        let is_current_month = today.year() == self.current_year && today.month() == self.current_month;
-
-        // Render weeks with cells
-        for week in weeks {
-            let mut week_row = row().spacing(1).height(Length::Fill);
-            for day_opt in week {
-                let cell = if let Some(day) = day_opt {
-                    let is_today = is_current_month && today.day() == day;
-                    let is_selected = self.selected_day == Some(day);
-
-                    // Create day cell with explicit 4px radius - use mouse_area instead of button
-                    let day_cell = if is_today {
-                        // Today: outlined with accent color border (not filled)
-                        container(
-                            container(widget::text::title4(day.to_string()))
-                                .padding([4, 8, 0, 0])  // Top-right padding
-                                .width(Length::Fill)
-                                .align_x(alignment::Horizontal::Right)
-                        )
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                        .padding(4)
-                        .style(|theme: &cosmic::Theme| {
-                            container::Style {
-                                background: None,
-                                border: Border {
-                                    color: theme.cosmic().accent_color().into(),
-                                    width: 2.0,
-                                    radius: [4.0, 4.0, 4.0, 4.0].into(),  // Force 4px radius
-                                },
-                                ..Default::default()
-                            }
-                        })
-                    } else if is_selected {
-                        // Selected: filled with accent color
-                        container(
-                            container(widget::text::title4(day.to_string()))
-                                .padding([4, 8, 0, 0])  // Top-right padding
-                                .width(Length::Fill)
-                                .align_x(alignment::Horizontal::Right)
-                        )
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                        .padding(4)
-                        .style(|theme: &cosmic::Theme| {
-                            container::Style {
-                                background: Some(Background::Color(theme.cosmic().accent_color().into())),
-                                border: Border {
-                                    radius: [4.0, 4.0, 4.0, 4.0].into(),  // Force 4px radius
-                                    ..Default::default()
-                                },
-                                ..Default::default()
-                            }
-                        })
-                    } else {
-                        // Normal day - light border
-                        container(
-                            container(widget::text(day.to_string()))
-                                .padding([4, 8, 0, 0])  // Top-right padding
-                                .width(Length::Fill)
-                                .align_x(alignment::Horizontal::Right)
-                        )
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                        .padding(4)
-                        .style(|theme: &cosmic::Theme| {
-                            container::Style {
-                                background: None,
-                                border: Border {
-                                    color: Color::from_rgba(0.5, 0.5, 0.5, 0.2).into(),  // Light gray border
-                                    width: 1.0,
-                                    radius: [4.0, 4.0, 4.0, 4.0].into(),  // Force 4px radius
-                                },
-                                ..Default::default()
-                            }
-                        })
-                    };
-
-                    // Wrap in mouse_area for click handling - no theme button styling
-                    mouse_area(day_cell)
-                        .on_press(Message::SelectDay(day))
-                } else {
-                    mouse_area(container(widget::text("")).padding(8))
-                };
-
-                week_row = week_row.push(
-                    container(cell)
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                );
-            }
-            grid = grid.push(week_row);
-        }
-
-        container(grid)
             .width(Length::Fill)
             .height(Length::Fill)
             .into()

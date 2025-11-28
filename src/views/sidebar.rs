@@ -4,13 +4,13 @@ use cosmic::{widget, Element};
 
 use crate::components::render_mini_calendar;
 use crate::message::Message;
+use crate::models::CalendarState;
 
 pub fn render_sidebar(
-    current_year: i32,
-    current_month: u32,
+    calendar_state: &CalendarState,
     selected_day: Option<u32>,
 ) -> Element<'static, Message> {
-    let mini_calendar = render_mini_calendar(current_year, current_month, selected_day);
+    let mini_calendar = render_mini_calendar(calendar_state, selected_day);
 
     let calendars_section = column()
         .spacing(8)

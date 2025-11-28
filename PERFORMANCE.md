@@ -4,8 +4,20 @@
 
 ### Calendar State Caching
 - `CalendarState` caches month/week calculations to avoid recomputing on every render
-- Cache is automatically invalidated when month/year changes
-- Reduces CPU usage when switching views or interacting with the UI
+- Cache is automatically invalidated when month/year changes in the `update()` method
+- Used by both main month view and mini calendar in sidebar
+- Reduces CPU usage significantly when switching views or interacting with the UI
+
+### Widget Tree Optimization
+- Reduced nested containers in day cells from 3 levels to 1 level
+- Pre-defined constants (BORDER_RADIUS, LIGHT_BORDER_COLOR) to avoid allocations
+- Removed redundant calendar calculations in views - now uses cached CalendarState
+- Simplified empty cell rendering (removed unnecessary mouse_area wrapper)
+
+### Module-Based Architecture
+- Month view, sidebar, and components use shared CalendarState reference
+- No duplicate calendar grid calculations across different UI components
+- Views module encapsulates rendering logic for better code reuse
 
 ### Build Optimizations
 - Always use `cargo build --release` for production builds
