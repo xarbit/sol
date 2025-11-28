@@ -1,23 +1,151 @@
-use cosmic::iced::Length;
-use cosmic::widget::{column, container};
+use cosmic::iced::{alignment, Border, Length};
+use cosmic::widget::{column, container, row, scrollable};
 use cosmic::{widget, Element};
 
 use crate::message::Message;
-use crate::ui_constants::{SPACING_LARGE, PADDING_LARGE};
+use crate::models::DayState;
+use crate::ui_constants::{
+    SPACING_TINY, PADDING_SMALL, PADDING_MEDIUM,
+    FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, FONT_SIZE_LARGE, BORDER_RADIUS, COLOR_DAY_CELL_BORDER
+};
 
-// Day view for future implementation
-#[allow(dead_code)]
-pub fn render_day_view() -> Element<'static, Message> {
+const HOUR_HEIGHT: f32 = 60.0; // Height of each hour slot
+const TIME_COLUMN_WIDTH: f32 = 60.0; // Width of the time labels column
+const ALL_DAY_SECTION_HEIGHT: f32 = 40.0; // Height of all-day events section
+
+pub fn render_day_view(day_state: &DayState) -> Element<'static, Message> {
+    let all_day_section = render_all_day_section(day_state);
+    let time_grid = render_time_grid(day_state);
+
     let content = column()
-        .spacing(SPACING_LARGE)
-        .padding(PADDING_LARGE)
-        .push(widget::text::title2("Day View"))
-        .push(widget::text("Day view coming soon..."));
+        .spacing(0)
+        .push(all_day_section)
+        .push(scrollable(time_grid));
 
     container(content)
         .width(Length::Fill)
         .height(Length::Fill)
-        .center_x(Length::Fill)
-        .center_y(Length::Fill)
         .into()
+}
+
+/// Render the all-day events section at the top
+fn render_all_day_section(day_state: &DayState) -> Element<'static, Message> {
+    let mut header_row = row().spacing(0);
+
+    // Clone strings to own them for 'static lifetime
+    let is_today = day_state.is_today();
+    let day_text = day_state.day_text.clone();
+    let date_number = day_state.date_number.clone();
+
+    // Time column placeholder
+    header_row = header_row.push(
+        container(widget::text(""))
+            .width(Length::Fixed(TIME_COLUMN_WIDTH))
+            .height(Length::Fixed(ALL_DAY_SECTION_HEIGHT))
+    );
+
+    // Create day header with larger size for single day view
+    let day_number_container = if is_today {
+        container(
+            widget::text(date_number.clone()).size(FONT_SIZE_LARGE)
+        )
+        .padding(PADDING_MEDIUM)
+        .style(|theme: &cosmic::Theme| {
+            container::Style {
+                background: Some(cosmic::iced::Background::Color(
+                    theme.cosmic().accent_color().into()
+                )),
+                border: Border {
+                    radius: BORDER_RADIUS.into(),
+                    ..Default::default()
+                },
+                ..Default::default()
+            }
+        })
+    } else {
+        container(widget::text(date_number.clone()).size(FONT_SIZE_LARGE))
+            .padding(PADDING_MEDIUM)
+    };
+
+    let day_header = column()
+        .spacing(SPACING_TINY)
+        .align_x(alignment::Horizontal::Center)
+        .push(widget::text(day_text).size(FONT_SIZE_MEDIUM))
+        .push(day_number_container);
+
+    header_row = header_row.push(
+        container(day_header)
+            .width(Length::Fill)
+            .height(Length::Fixed(ALL_DAY_SECTION_HEIGHT))
+            .padding(PADDING_SMALL)
+            .style(|_theme: &cosmic::Theme| container::Style {
+                border: Border {
+                    width: 0.5,
+                    color: COLOR_DAY_CELL_BORDER,
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+    );
+
+    header_row.into()
+}
+
+/// Render the main time grid with hourly slots
+fn render_time_grid(_day_state: &DayState) -> Element<'static, Message> {
+    let mut grid = column().spacing(0);
+
+    // Render 24 hours
+    for hour in 0..24 {
+        let mut hour_row = row().spacing(0);
+
+        // Time label
+        let time_label = if hour == 0 {
+            "12 AM".to_string()
+        } else if hour < 12 {
+            format!("{} AM", hour)
+        } else if hour == 12 {
+            "12 PM".to_string()
+        } else {
+            format!("{} PM", hour - 12)
+        };
+
+        hour_row = hour_row.push(
+            container(
+                widget::text(time_label)
+                    .size(FONT_SIZE_SMALL)
+            )
+            .width(Length::Fixed(TIME_COLUMN_WIDTH))
+            .height(Length::Fixed(HOUR_HEIGHT))
+            .padding(PADDING_SMALL)
+            .align_y(alignment::Vertical::Top)
+            .style(|_theme: &cosmic::Theme| container::Style {
+                border: Border {
+                    width: 0.5,
+                    color: COLOR_DAY_CELL_BORDER,
+                    ..Default::default()
+                },
+                ..Default::default()
+            })
+        );
+
+        // Day column - wider for better event visibility
+        hour_row = hour_row.push(
+            container(widget::text(""))
+                .width(Length::Fill)
+                .height(Length::Fixed(HOUR_HEIGHT))
+                .style(|_theme: &cosmic::Theme| container::Style {
+                    border: Border {
+                        width: 0.5,
+                        color: COLOR_DAY_CELL_BORDER,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+        );
+
+        grid = grid.push(hour_row);
+    }
+
+    grid.into()
 }

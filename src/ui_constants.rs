@@ -78,3 +78,4 @@ pub const FONT_SIZE_SMALL: u16 = 11;
 pub const FONT_SIZE_MEDIUM: u16 = 12;
 #[allow(dead_code)] // For future use
 pub const FONT_SIZE_BODY: u16 = 14;
+pub const FONT_SIZE_LARGE: u16 = 24;

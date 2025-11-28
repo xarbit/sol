@@ -4,7 +4,7 @@ use crate::components;
 use crate::fl;
 use crate::menu_action::MenuAction;
 use crate::message::Message;
-use crate::models::WeekState;
+use crate::models::{WeekState, DayState};
 use crate::storage::LocalStorage;
 use crate::views::{self, CalendarView};
 use chrono::Datelike;
@@ -31,6 +31,7 @@ pub struct CosmicCalendar {
     pub color_picker_open: Option<String>,
     pub cache: CalendarCache,
     pub week_state: WeekState,
+    pub day_state: DayState,
     pub about: about::About,
     pub key_binds: HashMap<menu::KeyBind, MenuAction>,
 }
@@ -111,6 +112,7 @@ impl CosmicCalendar {
             color_picker_open: None,
             cache,
             week_state: WeekState::current(),
+            day_state: DayState::current(),
             about,
             key_binds,
         }
@@ -182,7 +184,7 @@ impl CosmicCalendar {
 
     /// Render the main content area (toolbar + calendar view)
     pub fn render_main_content(&self) -> Element<'_, Message> {
-        views::render_main_content(&self.cache, &self.week_state, self.current_view, self.selected_day)
+        views::render_main_content(&self.cache, &self.week_state, &self.day_state, self.current_view, self.selected_day)
     }
 }
 
