@@ -1,5 +1,5 @@
 use cosmic::iced::Length;
-use cosmic::widget::{column, container, divider, row, scrollable};
+use cosmic::widget::{column, container, divider, row, scrollable, vertical_space};
 use cosmic::{widget, Element};
 
 use crate::components::render_mini_calendar;
@@ -29,14 +29,27 @@ pub fn render_sidebar(
                 .push(widget::text("Work")),
         );
 
-    let sidebar_content = column()
-        .spacing(20)
-        .padding(16)
-        .push(mini_calendar)
-        .push(divider::horizontal::default())
-        .push(calendars_section);
+    // Scrollable top section with calendars
+    let scrollable_content = scrollable(
+        column()
+            .spacing(20)
+            .padding(16)
+            .push(calendars_section)
+    );
 
-    container(scrollable(sidebar_content))
+    // Bottom section with mini calendar (fixed at bottom)
+    let bottom_section = column()
+        .spacing(0)
+        .push(divider::horizontal::default())
+        .push(container(mini_calendar).padding(16));
+
+    // Combine: scrollable top + fixed bottom
+    let sidebar_layout = column()
+        .spacing(0)
+        .push(container(scrollable_content).height(Length::Fill))
+        .push(bottom_section);
+
+    container(sidebar_layout)
         .width(Length::Fixed(280.0))
         .height(Length::Fill)
         .into()
