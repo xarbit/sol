@@ -55,7 +55,8 @@ pub const COLOR_DAY_CELL_BORDER: Color = Color::from_rgba(0.5, 0.5, 0.5, 0.2);
 // Icon names
 pub const ICON_PREVIOUS: &str = "go-previous-symbolic";
 pub const ICON_NEXT: &str = "go-next-symbolic";
-pub const ICON_SIDEBAR: &str = "sidebar-show-symbolic";
+pub const ICON_SIDEBAR_OPEN: &str = "navbar-open-symbolic";
+pub const ICON_SIDEBAR_CLOSED: &str = "navbar-closed-symbolic";
 pub const ICON_SEARCH: &str = "system-search-symbolic";
 
 // Weekday names

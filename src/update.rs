@@ -1,5 +1,6 @@
 use crate::app::CosmicCalendar;
 use crate::message::Message;
+use crate::models::WeekState;
 use crate::views::CalendarView;
 use cosmic::app::Task;
 
@@ -16,7 +17,14 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             handle_next_period(app);
         }
         Message::Today => {
-            app.navigate_to_today();
+            match app.current_view {
+                CalendarView::Week => {
+                    app.week_state = WeekState::current();
+                }
+                _ => {
+                    app.navigate_to_today();
+                }
+            }
         }
         Message::SelectDay(day) => {
             app.selected_day = Some(day);
@@ -78,7 +86,7 @@ fn handle_previous_period(app: &mut CosmicCalendar) {
     match app.current_view {
         CalendarView::Month => app.navigate_to_previous_month(),
         CalendarView::Week => {
-            // Week navigation logic
+            app.week_state = app.week_state.previous();
         }
         CalendarView::Day => {
             // Day navigation logic
@@ -91,7 +99,7 @@ fn handle_next_period(app: &mut CosmicCalendar) {
     match app.current_view {
         CalendarView::Month => app.navigate_to_next_month(),
         CalendarView::Week => {
-            // Week navigation logic
+            app.week_state = app.week_state.next();
         }
         CalendarView::Day => {
             // Day navigation logic

@@ -4,13 +4,13 @@ use crate::components;
 use crate::fl;
 use crate::menu_action::MenuAction;
 use crate::message::Message;
+use crate::models::WeekState;
 use crate::storage::LocalStorage;
 use crate::views::{self, CalendarView};
 use chrono::Datelike;
 use cosmic::app::Core;
 use cosmic::iced::{keyboard, keyboard::Key};
-use cosmic::iced::window;
-use cosmic::widget::{self, about, menu};
+use cosmic::widget::{about, menu};
 use cosmic::{Application, Element};
 use std::collections::HashMap;
 
@@ -30,6 +30,7 @@ pub struct CosmicCalendar {
     pub show_search: bool,
     pub color_picker_open: Option<String>,
     pub cache: CalendarCache,
+    pub week_state: WeekState,
     pub about: about::About,
     pub key_binds: HashMap<menu::KeyBind, MenuAction>,
 }
@@ -109,6 +110,7 @@ impl CosmicCalendar {
             show_search: false,
             color_picker_open: None,
             cache,
+            week_state: WeekState::current(),
             about,
             key_binds,
         }
@@ -180,7 +182,7 @@ impl CosmicCalendar {
 
     /// Render the main content area (toolbar + calendar view)
     pub fn render_main_content(&self) -> Element<'_, Message> {
-        views::render_main_content(&self.cache, self.current_view, self.selected_day)
+        views::render_main_content(&self.cache, &self.week_state, self.current_view, self.selected_day)
     }
 }
 
@@ -209,7 +211,7 @@ impl Application for CosmicCalendar {
     }
 
     fn header_start(&self) -> Vec<Element<'_, Self::Message>> {
-        components::render_header_start(&self.core, &self.key_binds)
+        components::render_header_start(&self.core, &self.key_binds, self.show_sidebar)
     }
 
     fn header_end(&self) -> Vec<Element<'_, Self::Message>> {

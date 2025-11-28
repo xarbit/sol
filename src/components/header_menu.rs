@@ -1,11 +1,11 @@
 use cosmic::widget::{button, menu};
-use cosmic::{widget, Apply, Element};
+use cosmic::{widget, Element};
 use cosmic::app::Core;
 use std::collections::HashMap;
 
 use crate::menu_action::MenuAction;
 use crate::message::Message;
-use crate::ui_constants::{ICON_SEARCH, ICON_SIDEBAR, MENU_ITEM_HEIGHT, MENU_ITEM_WIDTH, MENU_SPACING};
+use crate::ui_constants::{ICON_SEARCH, ICON_SIDEBAR_OPEN, ICON_SIDEBAR_CLOSED, MENU_ITEM_HEIGHT, MENU_ITEM_WIDTH, MENU_SPACING};
 
 const MENU_ID: &str = "sol-calendar-menu";
 
@@ -13,9 +13,16 @@ const MENU_ID: &str = "sol-calendar-menu";
 pub fn render_header_start<'a>(
     core: &'a Core,
     key_binds: &'a HashMap<menu::KeyBind, MenuAction>,
+    sidebar_visible: bool,
 ) -> Vec<Element<'a, Message>> {
+    let sidebar_icon = if sidebar_visible {
+        ICON_SIDEBAR_OPEN
+    } else {
+        ICON_SIDEBAR_CLOSED
+    };
+
     vec![
-        button::icon(widget::icon::from_name(ICON_SIDEBAR))
+        button::icon(widget::icon::from_name(sidebar_icon))
             .on_press(Message::ToggleSidebar)
             .into(),
         widget::responsive_menu_bar()
