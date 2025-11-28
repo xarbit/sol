@@ -62,6 +62,7 @@ impl CalendarState {
         self.today == (self.year, self.month, day)
     }
 
+    #[allow(dead_code)] // Helper method for future use
     pub fn is_current_month(&self) -> bool {
         self.today.0 == self.year && self.today.1 == self.month
     }

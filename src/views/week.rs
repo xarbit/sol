@@ -4,6 +4,8 @@ use cosmic::{widget, Element};
 
 use crate::message::Message;
 
+// Week view for future implementation
+#[allow(dead_code)]
 pub fn render_week_view() -> Element<'static, Message> {
     let content = column()
         .spacing(20)

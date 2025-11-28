@@ -13,6 +13,8 @@ pub struct CalendarEvent {
     pub location: Option<String>,
 }
 
+// CalDAV client for future use
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct CalDavClient {
     server_url: String,
@@ -21,6 +23,7 @@ pub struct CalDavClient {
     client: Client,
 }
 
+#[allow(dead_code)]
 impl CalDavClient {
     pub fn new(server_url: String, username: String, password: String) -> Self {
         CalDavClient {

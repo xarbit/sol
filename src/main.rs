@@ -28,6 +28,7 @@ struct CosmicCalendar {
     current_year: i32,
     current_month: u32,
     selected_day: Option<u32>,
+    #[allow(dead_code)] // Will be used for event storage in future
     storage: LocalStorage,
     show_sidebar: bool,
     show_search: bool,
@@ -286,6 +287,7 @@ impl CosmicCalendar {
     }
 
     /// Get or create calendar cache
+    #[allow(dead_code)] // Helper method for mutable access to cache
     fn get_cache(&mut self) -> &CalendarState {
         self.update_cache();
         self.calendar_cache.as_ref().unwrap()

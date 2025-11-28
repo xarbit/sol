@@ -10,6 +10,8 @@ pub struct LocalStorage {
     events: Vec<CalendarEvent>,
 }
 
+// Event storage methods for future use
+#[allow(dead_code)]
 impl LocalStorage {
     pub fn new() -> Self {
         LocalStorage {

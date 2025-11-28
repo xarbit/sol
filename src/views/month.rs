@@ -1,5 +1,5 @@
 use cosmic::iced::Length;
-use cosmic::widget::{column, container, mouse_area, row};
+use cosmic::widget::{column, container, row};
 use cosmic::{widget, Element};
 
 use crate::components::render_day_cell;
