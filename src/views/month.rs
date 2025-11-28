@@ -64,20 +64,24 @@ pub fn render_month_view(
     for week in &calendar_state.weeks {
         let mut week_row = row().spacing(1).height(Length::Fill);
         for day_opt in week {
-            let cell = if let Some(day) = day_opt {
+            if let Some(day) = day_opt {
                 let is_today = calendar_state.is_today(*day);
                 let is_selected = selected_day == Some(*day);
 
-                render_day_cell(*day, is_today, is_selected)
+                // Directly push cell without extra container wrapper
+                week_row = week_row.push(
+                    container(render_day_cell(*day, is_today, is_selected))
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                );
             } else {
-                // Empty cell - simplified structure
-                container(widget::text(""))
-                    .width(Length::Fill)
-                    .height(Length::Fill)
-                    .into()
-            };
-
-            week_row = week_row.push(container(cell).width(Length::Fill).height(Length::Fill));
+                // Empty cell - minimal structure
+                week_row = week_row.push(
+                    container(widget::text(""))
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                );
+            }
         }
         grid = grid.push(week_row);
     }

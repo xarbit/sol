@@ -34,6 +34,8 @@ struct CosmicCalendar {
     show_search: bool,
     // Cache calendar state to avoid recalculating on every render
     calendar_cache: Option<CalendarState>,
+    // Cache formatted month string to avoid chrono formatting on every render
+    cached_period_text: String,
 }
 
 impl Default for CosmicCalendar {
@@ -45,6 +47,10 @@ impl Default for CosmicCalendar {
         let year = now.year();
         let month = now.month();
 
+        // Pre-format the period text
+        let date = chrono::NaiveDate::from_ymd_opt(year, month, 1).unwrap();
+        let period_text = format!("{}", date.format("%B %Y"));
+
         CosmicCalendar {
             core: Core::default(),
             current_view: CalendarView::Month,
@@ -55,6 +61,7 @@ impl Default for CosmicCalendar {
             show_sidebar: true,
             show_search: false,
             calendar_cache: Some(CalendarState::new(year, month)),
+            cached_period_text: period_text,
         }
     }
 }
@@ -81,6 +88,10 @@ impl Application for CosmicCalendar {
         let year = now.year();
         let month = now.month();
 
+        // Pre-format the period text
+        let date = chrono::NaiveDate::from_ymd_opt(year, month, 1).unwrap();
+        let period_text = format!("{}", date.format("%B %Y"));
+
         let app = CosmicCalendar {
             core,
             current_view: CalendarView::Month,
@@ -91,6 +102,7 @@ impl Application for CosmicCalendar {
             show_sidebar: true,
             show_search: false,
             calendar_cache: Some(CalendarState::new(year, month)),
+            cached_period_text: period_text,
         };
         (app, cosmic::app::Task::none())
     }
@@ -283,6 +295,10 @@ impl CosmicCalendar {
 
         if needs_update {
             self.calendar_cache = Some(CalendarState::new(self.current_year, self.current_month));
+
+            // Also update cached period text
+            let date = chrono::NaiveDate::from_ymd_opt(self.current_year, self.current_month, 1).unwrap();
+            self.cached_period_text = format!("{}", date.format("%B %Y"));
         }
     }
 
@@ -304,13 +320,8 @@ impl CosmicCalendar {
     }
 
     fn render_main_content(&self) -> Element<'_, Message> {
-        // Toolbar
-        let date = chrono::NaiveDate::from_ymd_opt(self.current_year, self.current_month, 1).unwrap();
-        let period_text = match self.current_view {
-            CalendarView::Month => format!("{}", date.format("%B %Y")),
-            CalendarView::Week => format!("Week of {}", date.format("%B %d, %Y")),
-            CalendarView::Day => format!("{}", date.format("%B %d, %Y")),
-        };
+        // Toolbar - use cached period text to avoid chrono formatting on every render
+        let period_text = &self.cached_period_text;
 
         let toolbar_left = row()
             .spacing(8)
