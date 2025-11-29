@@ -30,6 +30,8 @@ pub struct CosmicCalendar {
     pub storage: LocalStorage,
     pub calendar_manager: CalendarManager,
     pub show_sidebar: bool,
+    /// Track previous condensed state to detect changes and sync sidebar
+    pub last_condensed: bool,
     pub show_search: bool,
     pub color_picker_open: Option<String>,
     pub cache: CalendarCache,
@@ -87,6 +89,7 @@ impl CosmicCalendar {
             storage,
             calendar_manager,
             show_sidebar: true,
+            last_condensed: false, // Will be synced on first render
             show_search: false,
             color_picker_open: None,
             cache,
@@ -248,38 +251,46 @@ impl Application for CosmicCalendar {
 
     fn subscription(&self) -> cosmic::iced::Subscription<Self::Message> {
         cosmic::iced::event::listen_with(|event, _status, _window_id| {
-            if let cosmic::iced::Event::Keyboard(keyboard::Event::KeyPressed {
-                key,
-                modifiers,
-                ..
-            }) = event
-            {
-                // Convert modifiers to menu modifiers
-                let mut menu_modifiers = Vec::new();
-                if modifiers.control() {
-                    menu_modifiers.push(menu::key_bind::Modifier::Ctrl);
-                }
-                if modifiers.shift() {
-                    menu_modifiers.push(menu::key_bind::Modifier::Shift);
-                }
-                if modifiers.alt() {
-                    menu_modifiers.push(menu::key_bind::Modifier::Alt);
-                }
-                if modifiers.logo() {
-                    menu_modifiers.push(menu::key_bind::Modifier::Super);
-                }
+            match event {
+                // Handle keyboard shortcuts
+                cosmic::iced::Event::Keyboard(keyboard::Event::KeyPressed {
+                    key,
+                    modifiers,
+                    ..
+                }) => {
+                    // Convert modifiers to menu modifiers
+                    let mut menu_modifiers = Vec::new();
+                    if modifiers.control() {
+                        menu_modifiers.push(menu::key_bind::Modifier::Ctrl);
+                    }
+                    if modifiers.shift() {
+                        menu_modifiers.push(menu::key_bind::Modifier::Shift);
+                    }
+                    if modifiers.alt() {
+                        menu_modifiers.push(menu::key_bind::Modifier::Alt);
+                    }
+                    if modifiers.logo() {
+                        menu_modifiers.push(menu::key_bind::Modifier::Super);
+                    }
 
-                let key_bind = menu::KeyBind {
-                    modifiers: menu_modifiers,
-                    key: key.clone(),
-                };
+                    let key_bind = menu::KeyBind {
+                        modifiers: menu_modifiers,
+                        key: key.clone(),
+                    };
 
-                // Look up the action in the global keyboard shortcuts
-                if let Some(action) = crate::keyboard::get_key_binds().get(&key_bind) {
-                    return Some(action.message());
+                    // Look up the action in the global keyboard shortcuts
+                    if let Some(action) = crate::keyboard::get_key_binds().get(&key_bind) {
+                        return Some(action.message());
+                    }
+                    None
                 }
+                // Handle window resize to sync sidebar with condensed state
+                // The actual condensed state is checked in update handler
+                cosmic::iced::Event::Window(cosmic::iced::window::Event::Resized { .. }) => {
+                    Some(Message::WindowResized)
+                }
+                _ => None,
             }
-            None
         })
     }
 }

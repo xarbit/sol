@@ -8,6 +8,8 @@ pub enum Message {
     Today,
     SelectDay(i32, u32, u32), // (year, month, day)
     ToggleSidebar,
+    /// Triggered on window resize to sync sidebar with condensed state
+    WindowResized,
     ToggleSearch,
     ToggleWeekNumbers,
     ToggleCalendar(String),

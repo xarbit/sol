@@ -6,6 +6,14 @@ use cosmic::app::Task;
 
 /// Handle all application messages and update state
 pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Message> {
+    // Sync sidebar with condensed state on every update
+    let is_condensed = app.core.is_condensed();
+    if is_condensed != app.last_condensed {
+        app.last_condensed = is_condensed;
+        // Auto-collapse sidebar when entering condensed mode, show when leaving
+        app.show_sidebar = !is_condensed;
+    }
+
     match message {
         Message::ChangeView(view) => {
             // When changing views, sync views to the selected_date so the new view
@@ -31,6 +39,9 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         }
         Message::ToggleSidebar => {
             app.show_sidebar = !app.show_sidebar;
+        }
+        Message::WindowResized => {
+            // Sync is handled at start of update(), nothing else needed
         }
         Message::ToggleSearch => {
             app.show_search = !app.show_search;
