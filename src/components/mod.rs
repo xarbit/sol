@@ -8,6 +8,7 @@ mod event_dialog;
 mod header_menu;
 mod mini_calendar;
 mod time_grid;
+mod time_picker;
 mod toolbar;
 
 pub use calendar_dialog::{render_calendar_dialog, render_delete_calendar_dialog};

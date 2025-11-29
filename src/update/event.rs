@@ -1,7 +1,7 @@
 //! Event management handlers (quick events and event dialog)
 
 use chrono::{NaiveDate, NaiveTime, TimeZone, Utc};
-use cosmic::widget::text_editor;
+use cosmic::widget::{calendar::CalendarModel, text_editor};
 use uuid::Uuid;
 
 use crate::app::{CosmicCalendar, EventDialogState};
@@ -152,6 +152,12 @@ pub fn handle_open_new_event_dialog(app: &mut CosmicCalendar) {
         url: String::new(),
         notes_content: text_editor::Content::new(),
         editing_field: None,
+        start_date_picker_open: false,
+        start_date_calendar: CalendarModel::new(today, today),
+        end_date_picker_open: false,
+        end_date_calendar: CalendarModel::new(today, today),
+        start_time_picker_open: false,
+        end_time_picker_open: false,
     });
 }
 
@@ -211,6 +217,12 @@ pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, uid: String) {
         url: event.url.unwrap_or_default(),
         notes_content: text_editor::Content::with_text(&event.notes.unwrap_or_default()),
         editing_field: None,
+        start_date_picker_open: false,
+        start_date_calendar: CalendarModel::new(start_date, start_date),
+        end_date_picker_open: false,
+        end_date_calendar: CalendarModel::new(end_date, end_date),
+        start_time_picker_open: false,
+        end_time_picker_open: false,
     });
 }
 

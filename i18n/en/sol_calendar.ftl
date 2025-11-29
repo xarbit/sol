@@ -146,6 +146,7 @@ button-cancel = Cancel
 button-delete = Delete
 button-close = Close
 button-create = Create
+button-apply = Apply
 
 # Dialog - Calendar (New/Edit)
 dialog-new-calendar-title = New Calendar

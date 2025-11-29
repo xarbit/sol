@@ -1,4 +1,4 @@
-use chrono::{NaiveDate, NaiveTime};
+use chrono::NaiveDate;
 use crate::app::EventDialogField;
 use crate::caldav::{AlertTime, RepeatFrequency, TravelTime};
 use crate::views::CalendarView;
@@ -86,18 +86,34 @@ pub enum Message {
     EventDialogStartDateInputChanged(String),
     /// Update event start date in dialog
     EventDialogStartDateChanged(NaiveDate),
-    /// Update event start time input text
-    EventDialogStartTimeInputChanged(String),
-    /// Update event start time in dialog
-    EventDialogStartTimeChanged(Option<NaiveTime>),
+    /// Toggle start date calendar picker
+    EventDialogToggleStartDatePicker,
+    /// Navigate start date calendar to previous month
+    EventDialogStartDateCalendarPrev,
+    /// Navigate start date calendar to next month
+    EventDialogStartDateCalendarNext,
+    /// Toggle start time picker
+    EventDialogToggleStartTimePicker,
+    /// Set start time hour
+    EventDialogStartTimeHourChanged(u32),
+    /// Set start time minute
+    EventDialogStartTimeMinuteChanged(u32),
     /// Update event end date input text
     EventDialogEndDateInputChanged(String),
     /// Update event end date in dialog
     EventDialogEndDateChanged(NaiveDate),
-    /// Update event end time input text
-    EventDialogEndTimeInputChanged(String),
-    /// Update event end time in dialog
-    EventDialogEndTimeChanged(Option<NaiveTime>),
+    /// Toggle end date calendar picker
+    EventDialogToggleEndDatePicker,
+    /// Navigate end date calendar to previous month
+    EventDialogEndDateCalendarPrev,
+    /// Navigate end date calendar to next month
+    EventDialogEndDateCalendarNext,
+    /// Toggle end time picker
+    EventDialogToggleEndTimePicker,
+    /// Set end time hour
+    EventDialogEndTimeHourChanged(u32),
+    /// Set end time minute
+    EventDialogEndTimeMinuteChanged(u32),
     /// Update travel time in dialog
     EventDialogTravelTimeChanged(TravelTime),
     /// Update repeat frequency in dialog

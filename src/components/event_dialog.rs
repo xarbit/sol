@@ -1,8 +1,9 @@
 //! Event dialog component for creating and editing events
 //! Uses COSMIC settings-style grouped sections with editable_input
 
+use chrono::Weekday;
 use cosmic::iced::Length;
-use cosmic::widget::{button, column, container, row, scrollable, settings, text, text_editor, toggler};
+use cosmic::widget::{button, calendar, column, container, popover, row, scrollable, settings, text, text_editor, toggler};
 use cosmic::widget::editable_input;
 use cosmic::{widget, Element};
 
@@ -112,62 +113,186 @@ pub fn render_event_dialog<'a>(
     let all_day_toggler = toggler(state.all_day)
         .on_toggle(Message::EventDialogAllDayToggled);
 
-    // Start date using editable_input
-    let start_date_input = editable_input(
-        "YYYY-MM-DD",
-        &state.start_date_input,
-        is_editing(EventDialogField::StartDate),
-        |editing| Message::EventDialogToggleEdit(EventDialogField::StartDate, editing),
-    )
-    .on_input(Message::EventDialogStartDateInputChanged)
-    .width(Length::Fixed(140.0));
+    // Start date display as text
+    let start_date_text = text(&state.start_date_input).width(Length::Fixed(100.0));
 
-    // Start time using editable_input
-    let start_time_input = editable_input(
-        "HH:MM",
-        &state.start_time_input,
-        is_editing(EventDialogField::StartTime),
-        |editing| Message::EventDialogToggleEdit(EventDialogField::StartTime, editing),
+    // Calendar picker button for start date with popover
+    let start_date_picker_btn = button::custom(
+        row()
+            .spacing(8)
+            .align_y(cosmic::iced::Alignment::Center)
+            .push(start_date_text)
+            .push(widget::icon::from_name("x-office-calendar-symbolic").size(16))
     )
-    .on_input(Message::EventDialogStartTimeInputChanged)
-    .width(Length::Fixed(100.0));
+    .on_press(Message::EventDialogToggleStartDatePicker)
+    .padding([4, 8])
+    .class(cosmic::theme::Button::Standard);
 
-    // End date using editable_input
-    let end_date_input = editable_input(
-        "YYYY-MM-DD",
-        &state.end_date_input,
-        is_editing(EventDialogField::EndDate),
-        |editing| Message::EventDialogToggleEdit(EventDialogField::EndDate, editing),
-    )
-    .on_input(Message::EventDialogEndDateInputChanged)
-    .width(Length::Fixed(140.0));
+    // Start date calendar popover
+    let start_date_with_picker: Element<'_, Message> = if state.start_date_picker_open {
+        let calendar_popup = container(
+            calendar(
+                &state.start_date_calendar,
+                Message::EventDialogStartDateChanged,
+                || Message::EventDialogStartDateCalendarPrev,
+                || Message::EventDialogStartDateCalendarNext,
+                Weekday::Mon,
+            )
+        )
+        .style(|theme: &cosmic::Theme| {
+            let cosmic = theme.cosmic();
+            container::Style {
+                background: Some(cosmic::iced::Background::Color(
+                    cosmic.background.base.into(),
+                )),
+                border: cosmic::iced::Border {
+                    radius: cosmic.corner_radii.radius_m.into(),
+                    width: 1.0,
+                    color: cosmic.bg_divider().into(),
+                },
+                shadow: cosmic::iced::Shadow {
+                    color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.2),
+                    offset: cosmic::iced::Vector::new(0.0, 2.0),
+                    blur_radius: 8.0,
+                },
+                ..Default::default()
+            }
+        });
+        popover(start_date_picker_btn)
+            .popup(calendar_popup)
+            .on_close(Message::EventDialogToggleStartDatePicker)
+            .into()
+    } else {
+        start_date_picker_btn.into()
+    };
 
-    // End time using editable_input
-    let end_time_input = editable_input(
-        "HH:MM",
-        &state.end_time_input,
-        is_editing(EventDialogField::EndTime),
-        |editing| Message::EventDialogToggleEdit(EventDialogField::EndTime, editing),
+    // Start time picker button
+    let start_time_text = text(&state.start_time_input).width(Length::Fixed(60.0));
+    let start_time_picker_btn = button::custom(
+        row()
+            .spacing(8)
+            .align_y(cosmic::iced::Alignment::Center)
+            .push(start_time_text)
+            .push(widget::icon::from_name("preferences-system-time-symbolic").size(16))
     )
-    .on_input(Message::EventDialogEndTimeInputChanged)
-    .width(Length::Fixed(100.0));
+    .on_press(Message::EventDialogToggleStartTimePicker)
+    .padding([4, 8])
+    .class(cosmic::theme::Button::Standard);
+
+    // Start time picker popover
+    let start_time_with_picker: Element<'_, Message> = if state.start_time_picker_open {
+        let time_popup = super::time_picker::render_time_picker(
+            state.start_time,
+            Message::EventDialogStartTimeHourChanged,
+            Message::EventDialogStartTimeMinuteChanged,
+            Message::EventDialogToggleStartTimePicker,
+        );
+        popover(start_time_picker_btn)
+            .popup(time_popup)
+            .on_close(Message::EventDialogToggleStartTimePicker)
+            .into()
+    } else {
+        start_time_picker_btn.into()
+    };
+
+    // End date display as text
+    let end_date_text = text(&state.end_date_input).width(Length::Fixed(100.0));
+
+    // Calendar picker button for end date with popover
+    let end_date_picker_btn = button::custom(
+        row()
+            .spacing(8)
+            .align_y(cosmic::iced::Alignment::Center)
+            .push(end_date_text)
+            .push(widget::icon::from_name("x-office-calendar-symbolic").size(16))
+    )
+    .on_press(Message::EventDialogToggleEndDatePicker)
+    .padding([4, 8])
+    .class(cosmic::theme::Button::Standard);
+
+    // End date calendar popover
+    let end_date_with_picker: Element<'_, Message> = if state.end_date_picker_open {
+        let calendar_popup = container(
+            calendar(
+                &state.end_date_calendar,
+                Message::EventDialogEndDateChanged,
+                || Message::EventDialogEndDateCalendarPrev,
+                || Message::EventDialogEndDateCalendarNext,
+                Weekday::Mon,
+            )
+        )
+        .style(|theme: &cosmic::Theme| {
+            let cosmic = theme.cosmic();
+            container::Style {
+                background: Some(cosmic::iced::Background::Color(
+                    cosmic.background.base.into(),
+                )),
+                border: cosmic::iced::Border {
+                    radius: cosmic.corner_radii.radius_m.into(),
+                    width: 1.0,
+                    color: cosmic.bg_divider().into(),
+                },
+                shadow: cosmic::iced::Shadow {
+                    color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.2),
+                    offset: cosmic::iced::Vector::new(0.0, 2.0),
+                    blur_radius: 8.0,
+                },
+                ..Default::default()
+            }
+        });
+        popover(end_date_picker_btn)
+            .popup(calendar_popup)
+            .on_close(Message::EventDialogToggleEndDatePicker)
+            .into()
+    } else {
+        end_date_picker_btn.into()
+    };
+
+    // End time picker button
+    let end_time_text = text(&state.end_time_input).width(Length::Fixed(60.0));
+    let end_time_picker_btn = button::custom(
+        row()
+            .spacing(8)
+            .align_y(cosmic::iced::Alignment::Center)
+            .push(end_time_text)
+            .push(widget::icon::from_name("preferences-system-time-symbolic").size(16))
+    )
+    .on_press(Message::EventDialogToggleEndTimePicker)
+    .padding([4, 8])
+    .class(cosmic::theme::Button::Standard);
+
+    // End time picker popover
+    let end_time_with_picker: Element<'_, Message> = if state.end_time_picker_open {
+        let time_popup = super::time_picker::render_time_picker(
+            state.end_time,
+            Message::EventDialogEndTimeHourChanged,
+            Message::EventDialogEndTimeMinuteChanged,
+            Message::EventDialogToggleEndTimePicker,
+        );
+        popover(end_time_picker_btn)
+            .popup(time_popup)
+            .on_close(Message::EventDialogToggleEndTimePicker)
+            .into()
+    } else {
+        end_time_picker_btn.into()
+    };
 
     let starts_row = if state.all_day {
-        row().spacing(8).push(start_date_input)
+        row().spacing(8).push(start_date_with_picker)
     } else {
         row()
             .spacing(8)
-            .push(start_date_input)
-            .push(start_time_input)
+            .push(start_date_with_picker)
+            .push(start_time_with_picker)
     };
 
     let ends_row = if state.all_day {
-        row().spacing(8).push(end_date_input)
+        row().spacing(8).push(end_date_with_picker)
     } else {
         row()
             .spacing(8)
-            .push(end_date_input)
-            .push(end_time_input)
+            .push(end_date_with_picker)
+            .push(end_time_with_picker)
     };
 
     let datetime_section = settings::section()

@@ -11,7 +11,7 @@ mod calendar;
 mod event;
 mod navigation;
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Timelike};
 use cosmic::app::Task;
 
 use crate::app::CosmicCalendar;
@@ -230,28 +230,56 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.start_date = date;
                 dialog.start_date_input = date.format("%Y-%m-%d").to_string();
+                dialog.start_date_calendar.set_selected_visible(date);
+                dialog.start_date_picker_open = false; // Close picker after selection
                 // If end date is before start, adjust it
                 if dialog.end_date < date {
                     dialog.end_date = date;
                     dialog.end_date_input = date.format("%Y-%m-%d").to_string();
+                    dialog.end_date_calendar.set_selected_visible(date);
                 }
             }
         }
-        Message::EventDialogStartTimeInputChanged(input) => {
+        Message::EventDialogToggleStartDatePicker => {
             if let Some(ref mut dialog) = app.event_dialog {
-                dialog.start_time_input = input.clone();
-                // Try to parse the time
-                if let Ok(time) = chrono::NaiveTime::parse_from_str(&input, "%H:%M") {
-                    dialog.start_time = Some(time);
+                dialog.start_date_picker_open = !dialog.start_date_picker_open;
+                dialog.end_date_picker_open = false; // Close the other picker
+            }
+        }
+        Message::EventDialogStartDateCalendarPrev => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.start_date_calendar.show_prev_month();
+            }
+        }
+        Message::EventDialogStartDateCalendarNext => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.start_date_calendar.show_next_month();
+            }
+        }
+        Message::EventDialogToggleStartTimePicker => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.start_time_picker_open = !dialog.start_time_picker_open;
+                dialog.end_time_picker_open = false;
+                dialog.start_date_picker_open = false;
+                dialog.end_date_picker_open = false;
+            }
+        }
+        Message::EventDialogStartTimeHourChanged(hour) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                let current = dialog.start_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(9, 0, 0).unwrap());
+                if let Some(new_time) = chrono::NaiveTime::from_hms_opt(hour, current.minute(), 0) {
+                    dialog.start_time = Some(new_time);
+                    dialog.start_time_input = new_time.format("%H:%M").to_string();
                 }
             }
         }
-        Message::EventDialogStartTimeChanged(time) => {
+        Message::EventDialogStartTimeMinuteChanged(minute) => {
             if let Some(ref mut dialog) = app.event_dialog {
-                dialog.start_time = time;
-                dialog.start_time_input = time
-                    .map(|t| t.format("%H:%M").to_string())
-                    .unwrap_or_default();
+                let current = dialog.start_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(9, 0, 0).unwrap());
+                if let Some(new_time) = chrono::NaiveTime::from_hms_opt(current.hour(), minute, 0) {
+                    dialog.start_time = Some(new_time);
+                    dialog.start_time_input = new_time.format("%H:%M").to_string();
+                }
             }
         }
         Message::EventDialogEndDateInputChanged(input) => {
@@ -267,23 +295,50 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.end_date = date;
                 dialog.end_date_input = date.format("%Y-%m-%d").to_string();
+                dialog.end_date_calendar.set_selected_visible(date);
+                dialog.end_date_picker_open = false; // Close picker after selection
             }
         }
-        Message::EventDialogEndTimeInputChanged(input) => {
+        Message::EventDialogToggleEndDatePicker => {
             if let Some(ref mut dialog) = app.event_dialog {
-                dialog.end_time_input = input.clone();
-                // Try to parse the time
-                if let Ok(time) = chrono::NaiveTime::parse_from_str(&input, "%H:%M") {
-                    dialog.end_time = Some(time);
+                dialog.end_date_picker_open = !dialog.end_date_picker_open;
+                dialog.start_date_picker_open = false; // Close the other picker
+            }
+        }
+        Message::EventDialogEndDateCalendarPrev => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.end_date_calendar.show_prev_month();
+            }
+        }
+        Message::EventDialogEndDateCalendarNext => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.end_date_calendar.show_next_month();
+            }
+        }
+        Message::EventDialogToggleEndTimePicker => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.end_time_picker_open = !dialog.end_time_picker_open;
+                dialog.start_time_picker_open = false;
+                dialog.start_date_picker_open = false;
+                dialog.end_date_picker_open = false;
+            }
+        }
+        Message::EventDialogEndTimeHourChanged(hour) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                let current = dialog.end_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(10, 0, 0).unwrap());
+                if let Some(new_time) = chrono::NaiveTime::from_hms_opt(hour, current.minute(), 0) {
+                    dialog.end_time = Some(new_time);
+                    dialog.end_time_input = new_time.format("%H:%M").to_string();
                 }
             }
         }
-        Message::EventDialogEndTimeChanged(time) => {
+        Message::EventDialogEndTimeMinuteChanged(minute) => {
             if let Some(ref mut dialog) = app.event_dialog {
-                dialog.end_time = time;
-                dialog.end_time_input = time
-                    .map(|t| t.format("%H:%M").to_string())
-                    .unwrap_or_default();
+                let current = dialog.end_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(10, 0, 0).unwrap());
+                if let Some(new_time) = chrono::NaiveTime::from_hms_opt(current.hour(), minute, 0) {
+                    dialog.end_time = Some(new_time);
+                    dialog.end_time_input = new_time.format("%H:%M").to_string();
+                }
             }
         }
         Message::EventDialogTravelTimeChanged(travel_time) => {

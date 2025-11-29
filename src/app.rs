@@ -11,7 +11,7 @@ use crate::views::{self, CalendarView};
 use chrono::{Datelike, NaiveDate};
 use cosmic::app::Core;
 use cosmic::iced::keyboard;
-use cosmic::widget::{about, menu, text_editor};
+use cosmic::widget::{about, calendar::CalendarModel, menu, text_editor};
 use cosmic::widget::menu::Action as _; // Import trait for .message() method
 use cosmic::{Application, Element};
 use std::collections::HashMap;
@@ -55,10 +55,6 @@ pub struct DeleteCalendarDialogState {
 pub enum EventDialogField {
     Title,
     Location,
-    StartDate,
-    StartTime,
-    EndDate,
-    EndTime,
     Url,
 }
 
@@ -110,6 +106,18 @@ pub struct EventDialogState {
     pub notes_content: text_editor::Content,
     /// Which field is currently being edited (None = no field in edit mode)
     pub editing_field: Option<EventDialogField>,
+    /// Whether the start date calendar picker is open
+    pub start_date_picker_open: bool,
+    /// Calendar model for start date picker
+    pub start_date_calendar: CalendarModel,
+    /// Whether the end date calendar picker is open
+    pub end_date_picker_open: bool,
+    /// Calendar model for end date picker
+    pub end_date_calendar: CalendarModel,
+    /// Whether the start time picker is open
+    pub start_time_picker_open: bool,
+    /// Whether the end time picker is open
+    pub end_time_picker_open: bool,
 }
 
 /// Main application state
