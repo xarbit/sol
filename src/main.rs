@@ -5,6 +5,7 @@ mod calendars;
 mod color_constants;
 mod components;
 mod database;
+mod dialogs;
 mod keyboard;
 mod layout;
 mod layout_constants;
@@ -19,6 +20,7 @@ mod storage;
 mod styles;
 mod ui_constants;
 mod update;
+mod validation;
 mod views;
 
 use app::CosmicCalendar;

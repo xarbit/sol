@@ -139,25 +139,7 @@ pub fn render_event_dialog<'a>(
                 Weekday::Mon,
             )
         )
-        .style(|theme: &cosmic::Theme| {
-            let cosmic = theme.cosmic();
-            container::Style {
-                background: Some(cosmic::iced::Background::Color(
-                    cosmic.background.base.into(),
-                )),
-                border: cosmic::iced::Border {
-                    radius: cosmic.corner_radii.radius_m.into(),
-                    width: 1.0,
-                    color: cosmic.bg_divider().into(),
-                },
-                shadow: cosmic::iced::Shadow {
-                    color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.2),
-                    offset: cosmic::iced::Vector::new(0.0, 2.0),
-                    blur_radius: 8.0,
-                },
-                ..Default::default()
-            }
-        });
+        .style(popup_container_style);
         popover(start_date_picker_btn)
             .popup(calendar_popup)
             .on_close(Message::EventDialogToggleStartDatePicker)
@@ -221,25 +203,7 @@ pub fn render_event_dialog<'a>(
                 Weekday::Mon,
             )
         )
-        .style(|theme: &cosmic::Theme| {
-            let cosmic = theme.cosmic();
-            container::Style {
-                background: Some(cosmic::iced::Background::Color(
-                    cosmic.background.base.into(),
-                )),
-                border: cosmic::iced::Border {
-                    radius: cosmic.corner_radii.radius_m.into(),
-                    width: 1.0,
-                    color: cosmic.bg_divider().into(),
-                },
-                shadow: cosmic::iced::Shadow {
-                    color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.2),
-                    offset: cosmic::iced::Vector::new(0.0, 2.0),
-                    blur_radius: 8.0,
-                },
-                ..Default::default()
-            }
-        });
+        .style(popup_container_style);
         popover(end_date_picker_btn)
             .popup(calendar_popup)
             .on_close(Message::EventDialogToggleEndDatePicker)
@@ -548,25 +512,7 @@ pub fn render_event_dialog<'a>(
             .padding([8, 0]) // Small vertical padding for the container, scrollbar stays outside content
             .width(Length::Fixed(580.0))
             .max_height(700.0)
-            .style(|theme: &cosmic::Theme| {
-                let cosmic = theme.cosmic();
-                container::Style {
-                    background: Some(cosmic::iced::Background::Color(
-                        cosmic.background.base.into(),
-                    )),
-                    border: cosmic::iced::Border {
-                        radius: cosmic.corner_radii.radius_m.into(),
-                        width: 1.0,
-                        color: cosmic.bg_divider().into(),
-                    },
-                    shadow: cosmic::iced::Shadow {
-                        color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.3),
-                        offset: cosmic::iced::Vector::new(0.0, 4.0),
-                        blur_radius: 16.0,
-                    },
-                    ..Default::default()
-                }
-            }),
+            .style(dialog_container_style),
     )
     .width(Length::Fill)
     .height(Length::Fill)
@@ -577,4 +523,46 @@ pub fn render_event_dialog<'a>(
         ..Default::default()
     })
     .into()
+}
+
+/// Style function for popup containers (calendar picker, etc.)
+fn popup_container_style(theme: &cosmic::Theme) -> container::Style {
+    let cosmic = theme.cosmic();
+    container::Style {
+        background: Some(cosmic::iced::Background::Color(
+            cosmic.background.base.into(),
+        )),
+        border: cosmic::iced::Border {
+            radius: cosmic.corner_radii.radius_m.into(),
+            width: 1.0,
+            color: cosmic.bg_divider().into(),
+        },
+        shadow: cosmic::iced::Shadow {
+            color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.2),
+            offset: cosmic::iced::Vector::new(0.0, 2.0),
+            blur_radius: 8.0,
+        },
+        ..Default::default()
+    }
+}
+
+/// Style function for dialog container
+fn dialog_container_style(theme: &cosmic::Theme) -> container::Style {
+    let cosmic = theme.cosmic();
+    container::Style {
+        background: Some(cosmic::iced::Background::Color(
+            cosmic.background.base.into(),
+        )),
+        border: cosmic::iced::Border {
+            radius: cosmic.corner_radii.radius_m.into(),
+            width: 1.0,
+            color: cosmic.bg_divider().into(),
+        },
+        shadow: cosmic::iced::Shadow {
+            color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.3),
+            offset: cosmic::iced::Vector::new(0.0, 4.0),
+            blur_radius: 16.0,
+        },
+        ..Default::default()
+    }
 }

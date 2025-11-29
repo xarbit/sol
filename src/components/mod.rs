@@ -1,10 +1,12 @@
 mod calendar_dialog;
+mod calendar_dialog_callbacks;
 mod calendar_list;
 pub mod color_picker;
 mod day_cell;
 mod day_header;
 mod event_chip;
 mod event_dialog;
+mod event_dialog_callbacks;
 mod header_menu;
 mod mini_calendar;
 mod time_grid;
@@ -21,4 +23,12 @@ pub use event_chip::{render_quick_event_input, render_events_column, DisplayEven
 pub use header_menu::{render_header_end, render_header_start};
 pub use mini_calendar::render_mini_calendar;
 pub use time_grid::{render_time_grid, render_time_column_placeholder, grid_cell_style, bordered_cell_style, DayColumn};
+pub use time_picker::render_time_picker;
 pub use toolbar::render_toolbar;
+
+// These callback structs are available for future use when we complete the refactoring
+// to make dialogs generic over message type (like time_picker.rs)
+#[allow(unused_imports)]
+pub use calendar_dialog_callbacks::{CalendarDialogCallbacks, DeleteCalendarDialogCallbacks};
+#[allow(unused_imports)]
+pub use event_dialog_callbacks::EventDialogCallbacks;

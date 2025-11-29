@@ -52,7 +52,7 @@ pub fn render_mini_calendar(
     for week in &calendar_state.weeks {
         let mut week_row = row().spacing(SPACING_XXS);
         for day_opt in week {
-            if let Some(day) = day_opt {
+            let cell: Element<'static, Message> = if let Some(day) = day_opt {
                 let is_today = calendar_state.is_today(*day);
                 let is_selected = selected_day == Some(*day);
 
@@ -60,22 +60,25 @@ pub fn render_mini_calendar(
                     widget::button::suggested((*day).to_string())
                         .on_press(Message::SelectDay(year, month, *day))
                         .padding(PADDING_TINY)
-                        .width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
                 } else if is_selected {
                     widget::button::standard((*day).to_string())
                         .on_press(Message::SelectDay(year, month, *day))
                         .padding(PADDING_TINY)
-                        .width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
                 } else {
                     widget::button::text((*day).to_string())
                         .on_press(Message::SelectDay(year, month, *day))
                         .padding(PADDING_TINY)
-                        .width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
                 };
-                week_row = week_row.push(day_button);
+                day_button.into()
             } else {
-                week_row = week_row.push(container(widget::text("")).width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE)));
-            }
+                widget::text("").into()
+            };
+            // Wrap each cell in a fixed-width container to ensure alignment with headers
+            week_row = week_row.push(
+                container(cell)
+                    .width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
+                    .center_x(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
+            );
         }
         grid = grid.push(week_row);
     }
