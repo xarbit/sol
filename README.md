@@ -24,28 +24,54 @@ This project is in **active development**. The UI foundation is in place, but co
 
 ### ✅ Implemented Features
 
+#### Core UI
 - Apple Calendar-inspired layout with responsive left sidebar
 - Mini calendar in sidebar for quick date navigation
-- Month view with calendar grid
 - Day selection with visual feedback (outlined today, filled selection)
 - Square day cells with 4px rounded corners (theme-independent)
 - Instant responsive UI that adapts to window size
 - Sidebar overlay mode for small screens (COSMIC Files-style)
-- Toolbar with view switcher (Day/Week/Month)
+- COSMIC-style menu bar (File, Edit, View)
 - Navigation controls (Previous/Next/Today buttons)
-- COSMIC-style menu bar (File, Edit, View, Help)
+
+#### Multiple View Modes
+- **Month View**: Full month calendar grid with week numbers (optional)
+- **Week View**: Week schedule with hourly time slots and all-day events section
+- **Day View**: Single day detailed schedule with hourly breakdown
+- **Year View**: 12-month overview in 3×4 grid (Apple Calendar style)
+
+#### Navigation & Controls
+- View switcher buttons (Day/Week/Month/Year) in toolbar
+- Keyboard shortcuts for quick navigation:
+  - `Ctrl+1` - Month View
+  - `Ctrl+2` - Week View
+  - `Ctrl+3` - Day View
+  - `Ctrl+4` - Year View
+  - `Ctrl+N` - New Event (planned)
+
+#### Localization
+- System locale detection with fallback to English
+- Localized month and day names
+- First day of week respects locale (Monday/Sunday)
+- Week number calculation (ISO 8601)
+- Multiple languages supported (English, German, French, Ukrainian)
+
+#### Calendar Management
+- Multiple calendar support with color coding
+- Calendar visibility toggle
+- Custom color picker for calendars
+- Default calendars: Personal (blue), Work (purple)
 
 ### 🚧 Work In Progress
 
 - [ ] Event creation, editing, and deletion
-- [ ] Week and Day view implementations
 - [ ] CalDAV server configuration UI
 - [ ] Active CalDAV synchronization
-- [ ] Event display in calendar grid
-- [ ] Multiple calendar support
+- [ ] Event display in calendar views
 - [ ] Event notifications
 - [ ] Recurring events
 - [ ] Background sync
+- [ ] Search functionality
 
 ## Building
 
@@ -68,20 +94,80 @@ cargo run --release
 
 ## Architecture
 
-The application is structured into three main modules:
+Sol follows the **Elm/MVU (Model-View-Update)** architecture pattern, which is standard for libcosmic applications:
 
-- **`src/main.rs`**: Core application logic and UI rendering using libcosmic
-- **`src/caldav.rs`**: CalDAV client implementation for server synchronization
-- **`src/storage.rs`**: Local storage management for event caching
+### Module Organization
+
+```
+src/
+├── app.rs                  # Main application state and COSMIC framework integration
+├── main.rs                 # Entry point
+├── update.rs               # Message handling and state updates
+├── message.rs              # Application message enum
+├── menu_action.rs          # Menu action definitions
+├── keyboard.rs             # Centralized keyboard shortcuts
+├── layout.rs               # Responsive layout management
+│
+├── models/                 # Domain models and state
+│   ├── calendar_state.rs   # Month calendar state with caching
+│   ├── week_state.rs       # Week view state
+│   ├── day_state.rs        # Day view state
+│   └── year_state.rs       # Year view state
+│
+├── views/                  # View rendering functions (pure functions)
+│   ├── main_view.rs        # Main content coordinator
+│   ├── month.rs            # Month grid view
+│   ├── week.rs             # Week schedule view
+│   ├── day.rs              # Day schedule view
+│   ├── year.rs             # Year overview
+│   └── sidebar.rs          # Sidebar layout
+│
+├── components/             # Reusable UI components
+│   ├── day_cell.rs         # Individual day cell
+│   ├── mini_calendar.rs    # Mini calendar widget
+│   ├── calendar_list.rs    # Calendar list widget
+│   ├── color_picker.rs     # Color selection widget
+│   ├── toolbar.rs          # Navigation toolbar
+│   └── header_menu.rs      # Application menu bar
+│
+├── calendars/              # Calendar data sources
+│   ├── calendar_source.rs  # Calendar trait definition
+│   ├── local_calendar.rs   # Local calendar implementation
+│   ├── caldav_calendar.rs  # CalDAV calendar implementation
+│   └── config.rs           # Calendar configuration
+│
+├── locale.rs               # Locale detection and formatting
+├── localized_names.rs      # Localized month/day names
+├── cache.rs                # Calendar state caching
+├── caldav.rs               # CalDAV protocol support
+├── storage.rs              # Local event storage
+├── settings.rs             # Persistent app settings
+├── layout_constants.rs     # UI layout dimensions and spacing
+├── color_constants.rs      # UI color values
+└── styles.rs               # Custom styles for containers
+```
+
+### Key Architecture Patterns
+
+- **MVU Pattern**: Clean separation of Model (state), View (rendering), and Update (state transitions)
+- **Pure View Functions**: All views are pure functions that take state and return UI elements
+- **Centralized State**: Single source of truth in `CosmicCalendar` struct
+- **Message-Based Updates**: All state changes happen through message passing
+- **Caching Layer**: `CalendarCache` pre-computes calendar states for performance
+- **Calendar Abstraction**: `CalendarSource` trait enables pluggable calendar backends
 
 ## Technology Stack
 
 - **[libcosmic](https://github.com/pop-os/libcosmic)**: Modern UI framework for COSMIC desktop built on iced
-- **chrono**: Date and time handling
+- **chrono**: Date and time handling with timezone support
+- **chrono-tz**: Timezone database
+- **i18n-embed**: Internationalization framework
+- **fluent**: Localization system (Mozilla Fluent)
 - **icalendar**: iCalendar format parsing and generation
 - **reqwest**: HTTP client for CalDAV operations
 - **serde**: Serialization/deserialization
 - **dirs**: Platform-specific directory handling
+- **ron**: Rusty Object Notation for settings storage
 
 ## Planned CalDAV Support
 
@@ -108,18 +194,20 @@ Users will be able to configure:
 - **Offline-first**: Local storage with server sync
 - **Privacy-focused**: Events stored locally by default
 
-## Project Structure
+## Recent Improvements
 
-```
-cosmic-calendar/
-├── src/
-│   ├── main.rs         # Main application and UI
-│   ├── caldav.rs       # CalDAV client implementation
-│   └── storage.rs      # Local event storage
-├── images/             # Screenshots and assets
-├── Cargo.toml          # Dependencies
-└── README.md           # This file
-```
+### Architecture Refactoring (Latest)
+- **Centralized keyboard shortcuts**: Single source of truth in `keyboard.rs`, eliminating duplication
+- **Split UI constants**: Separated `layout_constants.rs` and `color_constants.rs` for better organization
+- **Calendar initialization**: Moved default calendar creation to `CalendarManager::with_defaults()`
+- **Improved maintainability**: Better separation of concerns and single responsibility principle
+
+### Year View Implementation
+- Apple Calendar-inspired 12-month grid layout (3×4)
+- Today highlighting with accent color
+- Localized month names
+- Proper vertical scaling for consistent month sizes
+- Keyboard shortcut: `Ctrl+4`
 
 ## Contributing
 
