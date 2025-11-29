@@ -1,18 +1,14 @@
 use chrono::Datelike;
-use cosmic::iced::{alignment, Border, Length};
+use cosmic::iced::Length;
 use cosmic::widget::{column, container, row, scrollable};
-use cosmic::{widget, Element};
+use cosmic::Element;
 
-use crate::components::{render_time_grid, render_time_column_placeholder, grid_cell_style, DayColumn};
+use crate::components::{render_time_grid, render_time_column_placeholder, grid_cell_style, DayColumn, render_day_header, DayHeaderConfig};
 use crate::locale::LocalePreferences;
 use crate::localized_names;
 use crate::message::Message;
 use crate::models::WeekState;
-use crate::ui_constants::{
-    SPACING_TINY, PADDING_SMALL,
-    FONT_SIZE_SMALL, FONT_SIZE_MEDIUM, BORDER_RADIUS,
-    ALL_DAY_HEADER_HEIGHT
-};
+use crate::ui_constants::{PADDING_SMALL, ALL_DAY_HEADER_HEIGHT};
 
 pub fn render_week_view(week_state: &WeekState, locale: &LocalePreferences) -> Element<'static, Message> {
     let all_day_section = render_all_day_section(week_state, locale);
@@ -48,33 +44,7 @@ fn render_all_day_section(week_state: &WeekState, locale: &LocalePreferences) ->
         let day_name = localized_names::get_weekday_short(date.weekday());
         let day_number = format!("{}", date.format("%d"));
 
-        let day_number_container = if is_today {
-            container(
-                widget::text(day_number).size(FONT_SIZE_MEDIUM)
-            )
-            .padding(PADDING_SMALL)
-            .style(|theme: &cosmic::Theme| {
-                container::Style {
-                    background: Some(cosmic::iced::Background::Color(
-                        theme.cosmic().accent_color().into()
-                    )),
-                    border: Border {
-                        radius: BORDER_RADIUS.into(),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                }
-            })
-        } else {
-            container(widget::text(day_number).size(FONT_SIZE_MEDIUM))
-                .padding(PADDING_SMALL)
-        };
-
-        let day_header = column()
-            .spacing(SPACING_TINY)
-            .align_x(alignment::Horizontal::Center)
-            .push(widget::text(day_name).size(FONT_SIZE_SMALL))
-            .push(day_number_container);
+        let day_header = render_day_header(DayHeaderConfig::week_view(day_name, day_number, is_today));
 
         header_row = header_row.push(
             container(day_header)

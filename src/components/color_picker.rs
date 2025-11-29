@@ -1,13 +1,14 @@
-use cosmic::iced::{Border, Color, Length};
-use cosmic::widget::{button, column, container, grid, row};
+use cosmic::iced::{Color, Length};
+use cosmic::widget::{button, column, container, row};
 use cosmic::{widget, Element};
 
 use crate::message::Message;
+use crate::styles::color_button_style;
 use crate::ui_constants::{
     COLOR_BUTTON_SIZE_SMALL, COLOR_BUTTON_SIZE_MEDIUM, COLOR_BUTTON_SIZE_LARGE,
     SPACING_COLOR_GRID, SPACING_COLOR_CONTAINER, PADDING_STANDARD,
-    COLOR_DEFAULT_GRAY, COLOR_BORDER_LIGHT, COLOR_BORDER_SELECTED, BORDER_RADIUS,
-    COLOR_INDICATOR_SIZE, COLOR_PALETTE_COLUMNS, BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_SELECTED
+    COLOR_DEFAULT_GRAY, COLOR_BORDER_LIGHT, COLOR_BORDER_SELECTED,
+    BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_SELECTED
 };
 
 /// Predefined color palette for calendars
@@ -57,15 +58,7 @@ pub fn render_color_indicator<'a>(
             .width(size)
             .height(size)
             .style(move |_theme: &cosmic::Theme| {
-                cosmic::iced::widget::container::Style {
-                    background: Some(cosmic::iced::Background::Color(color)),
-                    border: Border {
-                        radius: (size / 2.0).into(),
-                        width: BORDER_WIDTH_HIGHLIGHT,
-                        color: COLOR_BORDER_LIGHT,
-                    },
-                    ..Default::default()
-                }
+                color_button_style(color, size, BORDER_WIDTH_HIGHLIGHT, COLOR_BORDER_LIGHT)
             })
     )
     .on_press(Message::OpenColorPicker(calendar_id))
@@ -74,14 +67,15 @@ pub fn render_color_indicator<'a>(
 }
 
 /// Render a color picker palette with all available colors
+#[allow(dead_code)]
 pub fn render_color_palette<'a>(calendar_id: String) -> Element<'a, Message> {
     let mut color_grid = column().spacing(SPACING_COLOR_CONTAINER);
 
-    // Split colors into rows
-    for row_colors in CALENDAR_COLORS.chunks(COLOR_PALETTE_COLUMNS) {
+    // Split colors into rows (6 per row)
+    for row_colors in CALENDAR_COLORS.chunks(6) {
         let mut color_row = row().spacing(SPACING_COLOR_CONTAINER);
 
-        for (hex, name) in row_colors {
+        for (hex, _name) in row_colors {
             let color = parse_hex_color(hex).unwrap_or(COLOR_DEFAULT_GRAY);
             let hex_owned = hex.to_string();
             let calendar_id_clone = calendar_id.clone();
@@ -91,15 +85,7 @@ pub fn render_color_palette<'a>(calendar_id: String) -> Element<'a, Message> {
                     .width(COLOR_BUTTON_SIZE_MEDIUM)
                     .height(COLOR_BUTTON_SIZE_MEDIUM)
                     .style(move |_theme: &cosmic::Theme| {
-                        cosmic::iced::widget::container::Style {
-                            background: Some(cosmic::iced::Background::Color(color)),
-                            border: Border {
-                                radius: (COLOR_BUTTON_SIZE_MEDIUM / 2.0).into(),
-                                width: BORDER_WIDTH_HIGHLIGHT,
-                                color: COLOR_BORDER_LIGHT,
-                            },
-                            ..Default::default()
-                        }
+                        color_button_style(color, COLOR_BUTTON_SIZE_MEDIUM, BORDER_WIDTH_HIGHLIGHT, COLOR_BORDER_LIGHT)
                     })
             )
             .on_press(Message::ChangeCalendarColor(calendar_id_clone, hex_owned))
@@ -151,26 +137,14 @@ pub fn render_quick_color_picker<'a>(
             let is_selected = current_color == hex;
 
             let border_width = if is_selected { BORDER_WIDTH_SELECTED } else { BORDER_WIDTH_HIGHLIGHT };
-            let border_color = if is_selected {
-                COLOR_BORDER_SELECTED
-            } else {
-                COLOR_BORDER_LIGHT
-            };
+            let border_color = if is_selected { COLOR_BORDER_SELECTED } else { COLOR_BORDER_LIGHT };
 
             let color_button = button::custom(
                 container(widget::text(""))
                     .width(COLOR_BUTTON_SIZE_SMALL)
                     .height(COLOR_BUTTON_SIZE_SMALL)
                     .style(move |_theme: &cosmic::Theme| {
-                        cosmic::iced::widget::container::Style {
-                            background: Some(cosmic::iced::Background::Color(color)),
-                            border: Border {
-                                radius: (COLOR_BUTTON_SIZE_SMALL / 2.0).into(),
-                                width: border_width,
-                                color: border_color,
-                            },
-                            ..Default::default()
-                        }
+                        color_button_style(color, COLOR_BUTTON_SIZE_SMALL, border_width, border_color)
                     })
             )
             .on_press(Message::ChangeCalendarColor(calendar_id_clone, hex_owned))

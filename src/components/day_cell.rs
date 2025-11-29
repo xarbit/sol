@@ -1,9 +1,10 @@
-use cosmic::iced::{alignment, Background, Border, Length};
+use cosmic::iced::{alignment, Length};
 use cosmic::widget::{container, mouse_area};
 use cosmic::{widget, Element};
 
 use crate::message::Message;
-use crate::ui_constants::{BORDER_RADIUS, PADDING_DAY_CELL, COLOR_DAY_CELL_BORDER, COLOR_WEEKEND_BACKGROUND, BORDER_WIDTH_HIGHLIGHT, BORDER_WIDTH_NORMAL};
+use crate::styles::{today_outlined_style, selected_day_style, day_cell_style};
+use crate::ui_constants::PADDING_DAY_CELL;
 
 pub fn render_day_cell(
     year: i32,
@@ -28,15 +29,7 @@ pub fn render_day_cell(
             .width(Length::Fill)
             .height(Length::Fill)
             .align_x(alignment::Horizontal::Right)
-            .style(|theme: &cosmic::Theme| container::Style {
-                background: None,
-                border: Border {
-                    color: theme.cosmic().accent_color().into(),
-                    width: BORDER_WIDTH_HIGHLIGHT,
-                    radius: BORDER_RADIUS.into(),
-                },
-                ..Default::default()
-            })
+            .style(|theme: &cosmic::Theme| today_outlined_style(theme))
     } else if is_selected {
         // Selected: filled with accent color
         container(day_text)
@@ -44,14 +37,7 @@ pub fn render_day_cell(
             .width(Length::Fill)
             .height(Length::Fill)
             .align_x(alignment::Horizontal::Right)
-            .style(|theme: &cosmic::Theme| container::Style {
-                background: Some(Background::Color(theme.cosmic().accent_color().into())),
-                border: Border {
-                    radius: BORDER_RADIUS.into(),
-                    ..Default::default()
-                },
-                ..Default::default()
-            })
+            .style(|theme: &cosmic::Theme| selected_day_style(theme))
     } else {
         // Normal day - light border with optional weekend background
         container(day_text)
@@ -59,19 +45,7 @@ pub fn render_day_cell(
             .width(Length::Fill)
             .height(Length::Fill)
             .align_x(alignment::Horizontal::Right)
-            .style(move |_theme: &cosmic::Theme| container::Style {
-                background: if is_weekend {
-                    Some(Background::Color(COLOR_WEEKEND_BACKGROUND))
-                } else {
-                    None
-                },
-                border: Border {
-                    color: COLOR_DAY_CELL_BORDER.into(),
-                    width: BORDER_WIDTH_NORMAL,
-                    radius: BORDER_RADIUS.into(),
-                },
-                ..Default::default()
-            })
+            .style(move |_theme: &cosmic::Theme| day_cell_style(is_weekend))
     };
 
     // Single mouse_area wrapping the styled container

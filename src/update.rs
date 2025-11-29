@@ -86,39 +86,35 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
     Task::none()
 }
 
-/// Handle previous period navigation based on current view
-/// This moves the view backwards but updates selected_date to stay in sync
-fn handle_previous_period(app: &mut CosmicCalendar) {
+/// Direction for period navigation
+enum NavigationDirection {
+    Previous,
+    Next,
+}
+
+/// Handle period navigation (previous or next) based on current view
+fn handle_period_navigation(app: &mut CosmicCalendar, direction: NavigationDirection) {
+    let multiplier: i32 = match direction {
+        NavigationDirection::Previous => -1,
+        NavigationDirection::Next => 1,
+    };
+
     let new_date = match app.current_view {
         CalendarView::Year => {
-            // Move back one year
-            NaiveDate::from_ymd_opt(
-                app.selected_date.year() - 1,
-                app.selected_date.month(),
-                app.selected_date.day().min(28) // Handle edge cases like Feb 29
-            ).or_else(|| NaiveDate::from_ymd_opt(
-                app.selected_date.year() - 1,
-                app.selected_date.month(),
-                28
-            ))
+            // Move by one year
+            navigate_by_year(app.selected_date, multiplier)
         }
         CalendarView::Month => {
-            // Move back one month
-            let (year, month) = if app.selected_date.month() == 1 {
-                (app.selected_date.year() - 1, 12)
-            } else {
-                (app.selected_date.year(), app.selected_date.month() - 1)
-            };
-            NaiveDate::from_ymd_opt(year, month, app.selected_date.day().min(28))
-                .or_else(|| NaiveDate::from_ymd_opt(year, month, 28))
+            // Move by one month
+            navigate_by_month(app.selected_date, multiplier)
         }
         CalendarView::Week => {
-            // Move back one week
-            Some(app.selected_date - chrono::Duration::days(7))
+            // Move by one week
+            Some(app.selected_date + chrono::Duration::days(7 * multiplier as i64))
         }
         CalendarView::Day => {
-            // Move back one day
-            Some(app.selected_date - chrono::Duration::days(1))
+            // Move by one day
+            Some(app.selected_date + chrono::Duration::days(multiplier as i64))
         }
     };
 
@@ -127,45 +123,33 @@ fn handle_previous_period(app: &mut CosmicCalendar) {
     }
 }
 
-/// Handle next period navigation based on current view
-/// This moves the view forward but updates selected_date to stay in sync
-fn handle_next_period(app: &mut CosmicCalendar) {
-    let new_date = match app.current_view {
-        CalendarView::Year => {
-            // Move forward one year
-            NaiveDate::from_ymd_opt(
-                app.selected_date.year() + 1,
-                app.selected_date.month(),
-                app.selected_date.day().min(28)
-            ).or_else(|| NaiveDate::from_ymd_opt(
-                app.selected_date.year() + 1,
-                app.selected_date.month(),
-                28
-            ))
-        }
-        CalendarView::Month => {
-            // Move forward one month
-            let (year, month) = if app.selected_date.month() == 12 {
-                (app.selected_date.year() + 1, 1)
-            } else {
-                (app.selected_date.year(), app.selected_date.month() + 1)
-            };
-            NaiveDate::from_ymd_opt(year, month, app.selected_date.day().min(28))
-                .or_else(|| NaiveDate::from_ymd_opt(year, month, 28))
-        }
-        CalendarView::Week => {
-            // Move forward one week
-            Some(app.selected_date + chrono::Duration::days(7))
-        }
-        CalendarView::Day => {
-            // Move forward one day
-            Some(app.selected_date + chrono::Duration::days(1))
-        }
-    };
+/// Navigate a date by the given number of years, handling edge cases like Feb 29
+fn navigate_by_year(date: NaiveDate, years: i32) -> Option<NaiveDate> {
+    let new_year = date.year() + years;
+    // Try the same day first, then fall back to day 28 for edge cases
+    NaiveDate::from_ymd_opt(new_year, date.month(), date.day().min(28))
+        .or_else(|| NaiveDate::from_ymd_opt(new_year, date.month(), 28))
+}
 
-    if let Some(date) = new_date {
-        app.set_selected_date(date);
-    }
+/// Navigate a date by the given number of months, handling edge cases
+fn navigate_by_month(date: NaiveDate, months: i32) -> Option<NaiveDate> {
+    let total_months = date.year() * 12 + date.month() as i32 - 1 + months;
+    let new_year = total_months / 12;
+    let new_month = (total_months % 12 + 1) as u32;
+
+    // Try the same day first, then fall back to day 28 for edge cases
+    NaiveDate::from_ymd_opt(new_year, new_month, date.day().min(28))
+        .or_else(|| NaiveDate::from_ymd_opt(new_year, new_month, 28))
+}
+
+/// Handle previous period navigation
+fn handle_previous_period(app: &mut CosmicCalendar) {
+    handle_period_navigation(app, NavigationDirection::Previous);
+}
+
+/// Handle next period navigation
+fn handle_next_period(app: &mut CosmicCalendar) {
+    handle_period_navigation(app, NavigationDirection::Next);
 }
 
 /// Toggle a calendar's enabled state and save configuration
