@@ -7,7 +7,7 @@ mod year;
 
 pub use day::render_day_view;
 pub use main_view::render_main_content;
-pub use month::render_month_view;
+pub use month::{render_month_view, MonthViewEvents};
 pub use sidebar::render_sidebar;
 pub use week::render_week_view;
 pub use year::render_year_view;

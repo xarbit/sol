@@ -13,11 +13,12 @@ pub fn render_sidebar<'a>(
     calendars: &'a [Box<dyn CalendarSource>],
     selected_day: Option<u32>,
     color_picker_open: Option<&'a String>,
+    selected_calendar_id: Option<&'a String>,
 ) -> Element<'a, Message> {
     let mini_calendar = render_mini_calendar(calendar_state, selected_day);
 
     // Use the calendar list component
-    let calendars_section = render_calendar_list(calendars, color_picker_open);
+    let calendars_section = render_calendar_list(calendars, color_picker_open, selected_calendar_id);
 
     // Scrollable top section with calendars
     let scrollable_content = scrollable(

@@ -1,8 +1,9 @@
+use chrono::{Datelike, NaiveDate};
 use cosmic::iced::{alignment, Length};
 use cosmic::widget::{column, container, row};
 use cosmic::{widget, Element};
 
-use crate::components::render_day_cell;
+use crate::components::{render_day_cell, render_day_cell_with_events, DayCellConfig, DisplayEvent};
 use crate::fl;
 use crate::locale::LocalePreferences;
 use crate::localized_names;
@@ -13,12 +14,21 @@ use crate::ui_constants::{
     SPACING_TINY, WEEK_NUMBER_WIDTH
 };
 
-pub fn render_month_view(
+/// Events grouped by day for display in the month view
+pub struct MonthViewEvents<'a> {
+    /// Events for each day, keyed by day number (1-31)
+    pub events_by_day: &'a std::collections::HashMap<u32, Vec<DisplayEvent>>,
+    /// Quick event editing state: (date, text, calendar_color)
+    pub quick_event: Option<(NaiveDate, &'a str, &'a str)>,
+}
+
+pub fn render_month_view<'a>(
     calendar_state: &CalendarState,
     selected_day: Option<u32>,
     locale: &LocalePreferences,
     show_week_numbers: bool,
-) -> Element<'static, Message> {
+    events: Option<MonthViewEvents<'a>>,
+) -> Element<'a, Message> {
     let mut grid = column().spacing(SPACING_TINY).padding(PADDING_MONTH_GRID);
 
     // Weekday headers with optional week number column
@@ -77,9 +87,52 @@ pub fn render_month_view(
                 let weekday = calendar_state.get_weekday(*day);
                 let is_weekend = locale.is_weekend(weekday);
 
-                // Directly push cell without extra container wrapper
+                // Get events for this day if available
+                let day_events: Vec<DisplayEvent> = events
+                    .as_ref()
+                    .and_then(|e| e.events_by_day.get(day))
+                    .cloned()
+                    .unwrap_or_default();
+
+                // Check if quick event input should be shown for this day
+                let quick_event_data: Option<(String, String)> = events.as_ref().and_then(|e| {
+                    e.quick_event.as_ref().and_then(|(date, text, color)| {
+                        if date.day() == *day
+                            && date.month() == calendar_state.month
+                            && date.year() == calendar_state.year
+                        {
+                            Some((text.to_string(), color.to_string()))
+                        } else {
+                            None
+                        }
+                    })
+                });
+
+                // Use new cell with events if we have event data, otherwise simple cell
+                let cell = if events.is_some() {
+                    render_day_cell_with_events(DayCellConfig {
+                        year: calendar_state.year,
+                        month: calendar_state.month,
+                        day: *day,
+                        is_today,
+                        is_selected,
+                        is_weekend,
+                        events: day_events,
+                        quick_event: quick_event_data,
+                    })
+                } else {
+                    render_day_cell(
+                        calendar_state.year,
+                        calendar_state.month,
+                        *day,
+                        is_today,
+                        is_selected,
+                        is_weekend,
+                    )
+                };
+
                 week_row = week_row.push(
-                    container(render_day_cell(calendar_state.year, calendar_state.month, *day, is_today, is_selected, is_weekend))
+                    container(cell)
                         .width(Length::Fill)
                         .height(Length::Fill)
                 );

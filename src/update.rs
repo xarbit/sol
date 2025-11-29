@@ -1,8 +1,10 @@
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, NaiveTime, TimeZone, Utc};
 use crate::app::CosmicCalendar;
+use crate::caldav::CalendarEvent;
 use crate::message::Message;
 use crate::views::CalendarView;
 use cosmic::app::Task;
+use uuid::Uuid;
 
 /// Handle all application messages and update state
 pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Message> {
@@ -54,6 +56,9 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::ToggleCalendar(id) => {
             handle_toggle_calendar(app, id);
         }
+        Message::SelectCalendar(id) => {
+            app.selected_calendar_id = Some(id);
+        }
         Message::OpenColorPicker(id) => {
             app.color_picker_open = Some(id);
         }
@@ -62,6 +67,25 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         }
         Message::CloseColorPicker => {
             app.color_picker_open = None;
+        }
+        Message::StartQuickEvent(date) => {
+            // Start editing a quick event on the specified date
+            app.quick_event_editing = Some((date, String::new()));
+        }
+        Message::QuickEventTextChanged(text) => {
+            // Update the text of the quick event being edited
+            if let Some((date, _)) = app.quick_event_editing.take() {
+                app.quick_event_editing = Some((date, text));
+            }
+        }
+        Message::CommitQuickEvent => {
+            handle_commit_quick_event(app);
+        }
+        Message::CancelQuickEvent => {
+            app.quick_event_editing = None;
+        }
+        Message::DeleteEvent(uid) => {
+            handle_delete_event(app, uid);
         }
         Message::MiniCalendarPrevMonth => {
             app.navigate_mini_calendar_previous();
@@ -199,4 +223,69 @@ fn handle_change_calendar_color(app: &mut CosmicCalendar, id: String, color: Str
     app.calendar_manager.save_config().ok();
     // Close the color picker after selection
     app.color_picker_open = None;
+}
+
+/// Commit the quick event being edited - create a new event in the selected calendar
+fn handle_commit_quick_event(app: &mut CosmicCalendar) {
+    // Get the event data and clear the editing state
+    let Some((date, text)) = app.quick_event_editing.take() else {
+        return;
+    };
+
+    // Don't create empty events
+    let text = text.trim();
+    if text.is_empty() {
+        return;
+    }
+
+    // Get the selected calendar ID
+    let Some(calendar_id) = app.selected_calendar_id.clone() else {
+        eprintln!("No calendar selected for new event");
+        return;
+    };
+
+    // Create an all-day event for the selected date
+    // Use midnight UTC for start, end of day for end
+    let start_time = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
+    let end_time = NaiveTime::from_hms_opt(23, 59, 59).unwrap();
+
+    let start = Utc.from_utc_datetime(&date.and_time(start_time));
+    let end = Utc.from_utc_datetime(&date.and_time(end_time));
+
+    let event = CalendarEvent {
+        uid: Uuid::new_v4().to_string(),
+        summary: text.to_string(),
+        description: None,
+        start,
+        end,
+        location: None,
+    };
+
+    // Find the calendar and add the event
+    if let Some(calendar) = app
+        .calendar_manager
+        .sources_mut()
+        .iter_mut()
+        .find(|c| c.info().id == calendar_id)
+    {
+        if let Err(e) = calendar.add_event(event) {
+            eprintln!("Failed to add event: {}", e);
+            return;
+        }
+        // Sync to persist the event
+        if let Err(e) = calendar.sync() {
+            eprintln!("Failed to sync calendar: {}", e);
+        }
+    }
+}
+
+/// Delete an event by its UID from all calendars
+fn handle_delete_event(app: &mut CosmicCalendar, uid: String) {
+    for calendar in app.calendar_manager.sources_mut().iter_mut() {
+        if calendar.delete_event(&uid).is_ok() {
+            // Sync to persist the deletion
+            let _ = calendar.sync();
+            break;
+        }
+    }
 }

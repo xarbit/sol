@@ -44,6 +44,10 @@ pub struct CosmicCalendar {
     pub settings: AppSettings,
     pub about: about::About,
     pub key_binds: HashMap<menu::KeyBind, MenuAction>,
+    /// The currently selected calendar for new events (calendar id)
+    pub selected_calendar_id: Option<String>,
+    /// Quick event being edited: (date, event_text) - None when not editing
+    pub quick_event_editing: Option<(NaiveDate, String)>,
 }
 
 impl CosmicCalendar {
@@ -62,6 +66,12 @@ impl CosmicCalendar {
 
         // Initialize calendar manager with default calendars
         let calendar_manager = CalendarManager::with_defaults();
+
+        // Select the first calendar by default for new events
+        let selected_calendar_id = calendar_manager
+            .sources()
+            .first()
+            .map(|c| c.info().id.clone());
 
         // Load application settings
         let settings = AppSettings::load().unwrap_or_default();
@@ -101,6 +111,8 @@ impl CosmicCalendar {
             settings,
             about,
             key_binds,
+            selected_calendar_id,
+            quick_event_editing: None,
         }
     }
 
@@ -176,6 +188,7 @@ impl CosmicCalendar {
             self.calendar_manager.sources(),
             selected_day,
             self.color_picker_open.as_ref(),
+            self.selected_calendar_id.as_ref(),
         )
     }
 
@@ -193,7 +206,9 @@ impl CosmicCalendar {
             }
         };
 
-        views::render_main_content(&self.cache, &self.week_state, &self.day_state, &self.year_state, &self.locale, self.current_view, selected_day, self.settings.show_week_numbers)
+        // For now, pass None for month events - we'll implement this properly later
+        // The architecture is in place, we just need to handle lifetimes better
+        views::render_main_content(&self.cache, &self.week_state, &self.day_state, &self.year_state, &self.locale, self.current_view, selected_day, self.settings.show_week_numbers, None)
     }
 }
 

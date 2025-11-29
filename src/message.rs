@@ -1,23 +1,47 @@
+use chrono::NaiveDate;
 use crate::views::CalendarView;
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    // View navigation
     ChangeView(CalendarView),
     PreviousPeriod,
     NextPeriod,
     Today,
     SelectDay(i32, u32, u32), // (year, month, day)
+
+    // UI state
     ToggleSidebar,
     /// Triggered on window resize to sync sidebar with condensed state
     WindowResized,
     ToggleSearch,
     ToggleWeekNumbers,
+
+    // Calendar management
     ToggleCalendar(String),
+    /// Select a calendar as the active calendar for new events
+    SelectCalendar(String),
     OpenColorPicker(String),
     ChangeCalendarColor(String, String),
     CloseColorPicker,
+
+    // Event management
+    /// Start creating a quick event on a specific date
+    StartQuickEvent(NaiveDate),
+    /// Update the quick event text while editing
+    QuickEventTextChanged(String),
+    /// Commit the quick event (on Enter press)
+    CommitQuickEvent,
+    /// Cancel quick event editing (on Escape or click outside)
+    CancelQuickEvent,
+    /// Delete an event by its UID
+    DeleteEvent(String),
+
+    // Mini calendar
     MiniCalendarPrevMonth,
     MiniCalendarNextMonth,
+
+    // Menu actions
     NewEvent,
     ImportICal,
     ExportICal,

@@ -7,7 +7,7 @@ use crate::components;
 use crate::locale::LocalePreferences;
 use crate::message::Message;
 use crate::models::{WeekState, DayState, YearState};
-use crate::views::{self, CalendarView};
+use crate::views::{self, CalendarView, MonthViewEvents};
 
 /// Render the main content area (toolbar + calendar view)
 pub fn render_main_content<'a>(
@@ -19,6 +19,7 @@ pub fn render_main_content<'a>(
     current_view: CalendarView,
     selected_day: Option<u32>,
     show_week_numbers: bool,
+    month_events: Option<MonthViewEvents<'a>>,
 ) -> Element<'a, Message> {
     // Render toolbar - use appropriate text for each view
     // primary_text is bold (month/period), secondary_text is normal weight (year)
@@ -33,7 +34,7 @@ pub fn render_main_content<'a>(
     // Render current calendar view
     let calendar_view = match current_view {
         CalendarView::Year => views::render_year_view(year_state, locale),
-        CalendarView::Month => views::render_month_view(cache.current_state(), selected_day, locale, show_week_numbers),
+        CalendarView::Month => views::render_month_view(cache.current_state(), selected_day, locale, show_week_numbers, month_events),
         CalendarView::Week => views::render_week_view(week_state, locale),
         CalendarView::Day => views::render_day_view(day_state, locale),
     };
