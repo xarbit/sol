@@ -7,6 +7,8 @@ use crate::views::CalendarView;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MenuAction {
     NewEvent,
+    ImportICal,
+    ExportICal,
     Settings,
     Today,
     ViewYear,
@@ -23,6 +25,8 @@ impl menu::action::MenuAction for MenuAction {
     fn message(&self) -> Self::Message {
         match self {
             MenuAction::NewEvent => Message::NewEvent,
+            MenuAction::ImportICal => Message::ImportICal,
+            MenuAction::ExportICal => Message::ExportICal,
             MenuAction::Settings => Message::Settings,
             MenuAction::Today => Message::Today,
             MenuAction::ViewYear => Message::ChangeView(CalendarView::Year),

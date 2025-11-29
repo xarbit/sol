@@ -2,13 +2,15 @@ use cosmic::widget::{button, menu};
 use cosmic::{widget, Element};
 use cosmic::app::Core;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use crate::fl;
 use crate::menu_action::MenuAction;
 use crate::message::Message;
 use crate::ui_constants::{ICON_ADD, ICON_SEARCH, ICON_SIDEBAR_OPEN, ICON_SIDEBAR_CLOSED, ICON_TODAY, MENU_ITEM_HEIGHT, MENU_ITEM_WIDTH, MENU_SPACING};
 
-const MENU_ID: &str = "sol-calendar-menu";
+/// Static menu ID for responsive menu bar - must persist across renders for collapse state tracking
+static MENU_ID: LazyLock<widget::Id> = LazyLock::new(|| widget::Id::new("sol-calendar-menu"));
 
 /// Render the left side of the header (sidebar toggle + menu items)
 pub fn render_header_start<'a>(
@@ -34,11 +36,14 @@ pub fn render_header_start<'a>(
             .into_element(
                 core,
                 key_binds,
-                widget::Id::new(MENU_ID),
+                MENU_ID.clone(),
                 Message::Surface,
                 vec![
                     (fl!("menu-file"), vec![
                         menu::Item::Button(fl!("menu-new-event"), None, MenuAction::NewEvent),
+                        menu::Item::Divider,
+                        menu::Item::Button(fl!("menu-import-ical"), None, MenuAction::ImportICal),
+                        menu::Item::Button(fl!("menu-export-ical"), None, MenuAction::ExportICal),
                     ]),
                     (fl!("menu-edit"), vec![
                         menu::Item::Button(fl!("menu-settings"), None, MenuAction::Settings),

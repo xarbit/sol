@@ -62,6 +62,14 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             // TODO: Open new event dialog
             println!("New Event requested");
         }
+        Message::ImportICal => {
+            // TODO: Open file picker for iCal import
+            println!("Import iCal requested");
+        }
+        Message::ExportICal => {
+            // TODO: Open file picker for iCal export
+            println!("Export iCal requested");
+        }
         Message::Settings => {
             // TODO: Open settings dialog
             println!("Settings requested");

@@ -17,6 +17,8 @@ pub enum Message {
     MiniCalendarPrevMonth,
     MiniCalendarNextMonth,
     NewEvent,
+    ImportICal,
+    ExportICal,
     Settings,
     About,
     LaunchUrl(String),

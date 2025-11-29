@@ -12,56 +12,56 @@ static KEY_BINDS: OnceLock<HashMap<menu::KeyBind, MenuAction>> = OnceLock::new()
 pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
     let mut key_binds = HashMap::new();
 
-    // New Event: Ctrl+N
+    // New Event: Ctrl+Shift+N
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl],
+            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
             key: Key::Character("n".into()),
         },
         MenuAction::NewEvent,
     );
 
-    // Today: Ctrl+T
+    // Today: Ctrl+Shift+T
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl],
+            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
             key: Key::Character("t".into()),
         },
         MenuAction::Today,
     );
 
-    // Month View: Ctrl+1
+    // Day View: Ctrl+Shift+D
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl],
-            key: Key::Character("1".into()),
-        },
-        MenuAction::ViewMonth,
-    );
-
-    // Week View: Ctrl+2
-    key_binds.insert(
-        menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl],
-            key: Key::Character("2".into()),
-        },
-        MenuAction::ViewWeek,
-    );
-
-    // Day View: Ctrl+3
-    key_binds.insert(
-        menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl],
-            key: Key::Character("3".into()),
+            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            key: Key::Character("d".into()),
         },
         MenuAction::ViewDay,
     );
 
-    // Year View: Ctrl+4
+    // Week View: Ctrl+Shift+W
     key_binds.insert(
         menu::KeyBind {
-            modifiers: vec![menu::key_bind::Modifier::Ctrl],
-            key: Key::Character("4".into()),
+            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            key: Key::Character("w".into()),
+        },
+        MenuAction::ViewWeek,
+    );
+
+    // Month View: Ctrl+Shift+M
+    key_binds.insert(
+        menu::KeyBind {
+            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            key: Key::Character("m".into()),
+        },
+        MenuAction::ViewMonth,
+    );
+
+    // Year View: Ctrl+Shift+Y
+    key_binds.insert(
+        menu::KeyBind {
+            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            key: Key::Character("y".into()),
         },
         MenuAction::ViewYear,
     );
