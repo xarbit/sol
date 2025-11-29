@@ -9,6 +9,7 @@ mod localize;
 mod menu_action;
 mod message;
 mod models;
+mod settings;
 mod storage;
 mod styles;
 mod ui_constants;

@@ -15,19 +15,22 @@ pub fn render_month_view(
     calendar_state: &CalendarState,
     selected_day: Option<u32>,
     locale: &LocalePreferences,
+    show_week_numbers: bool,
 ) -> Element<'static, Message> {
     let mut grid = column().spacing(SPACING_TINY).padding(PADDING_MONTH_GRID);
 
-    // Weekday headers with week number column
+    // Weekday headers with optional week number column
     let mut header_row = row().spacing(SPACING_TINY);
 
-    // Week number header
-    header_row = header_row.push(
-        container(widget::text("Wk").size(FONT_SIZE_SMALL))
-            .width(Length::Fixed(WEEK_NUMBER_WIDTH))
-            .padding(PADDING_SMALL)
-            .align_y(alignment::Vertical::Center)
-    );
+    // Week number header (only if enabled)
+    if show_week_numbers {
+        header_row = header_row.push(
+            container(widget::text("Wk").size(FONT_SIZE_SMALL))
+                .width(Length::Fixed(WEEK_NUMBER_WIDTH))
+                .padding(PADDING_SMALL)
+                .align_y(alignment::Vertical::Center)
+        );
+    }
 
     // Weekday headers - use iterator to avoid repetition
     for weekday in WEEKDAYS_FULL {
@@ -48,18 +51,20 @@ pub fn render_month_view(
     for (week_index, week) in calendar_state.weeks.iter().enumerate() {
         let mut week_row = row().spacing(SPACING_TINY).height(Length::Fill);
 
-        // Week number cell
-        let week_number = week_numbers.get(week_index).copied().unwrap_or(0);
-        week_row = week_row.push(
-            container(
-                widget::text(format!("{}", week_number))
-                    .size(FONT_SIZE_SMALL)
-            )
-            .width(Length::Fixed(WEEK_NUMBER_WIDTH))
-            .height(Length::Fill)
-            .padding(PADDING_SMALL)
-            .align_y(alignment::Vertical::Center)
-        );
+        // Week number cell (only if enabled)
+        if show_week_numbers {
+            let week_number = week_numbers.get(week_index).copied().unwrap_or(0);
+            week_row = week_row.push(
+                container(
+                    widget::text(format!("{}", week_number))
+                        .size(FONT_SIZE_SMALL)
+                )
+                .width(Length::Fixed(WEEK_NUMBER_WIDTH))
+                .height(Length::Fill)
+                .padding(PADDING_SMALL)
+                .align_y(alignment::Vertical::Center)
+            );
+        }
 
         // Day cells
         for day_opt in week {

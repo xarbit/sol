@@ -6,6 +6,7 @@ use crate::locale::LocalePreferences;
 use crate::menu_action::MenuAction;
 use crate::message::Message;
 use crate::models::{WeekState, DayState};
+use crate::settings::AppSettings;
 use crate::storage::LocalStorage;
 use crate::views::{self, CalendarView};
 use chrono::Datelike;
@@ -34,6 +35,7 @@ pub struct CosmicCalendar {
     pub week_state: WeekState,
     pub day_state: DayState,
     pub locale: LocalePreferences,
+    pub settings: AppSettings,
     pub about: about::About,
     pub key_binds: HashMap<menu::KeyBind, MenuAction>,
 }
@@ -54,6 +56,9 @@ impl CosmicCalendar {
 
         // Initialize calendar manager with default calendars
         let calendar_manager = Self::create_default_calendars();
+
+        // Load application settings
+        let settings = AppSettings::load().unwrap_or_default();
 
         // Create About dialog
         let about = about::About::default()
@@ -119,6 +124,7 @@ impl CosmicCalendar {
             week_state: WeekState::current_with_first_day(locale.first_day_of_week, &locale),
             day_state: DayState::current(&locale),
             locale,
+            settings,
             about,
             key_binds,
         }
@@ -190,7 +196,7 @@ impl CosmicCalendar {
 
     /// Render the main content area (toolbar + calendar view)
     pub fn render_main_content(&self) -> Element<'_, Message> {
-        views::render_main_content(&self.cache, &self.week_state, &self.day_state, &self.locale, self.current_view, self.selected_day)
+        views::render_main_content(&self.cache, &self.week_state, &self.day_state, &self.locale, self.current_view, self.selected_day, self.settings.show_week_numbers)
     }
 }
 
@@ -219,7 +225,7 @@ impl Application for CosmicCalendar {
     }
 
     fn header_start(&self) -> Vec<Element<'_, Self::Message>> {
-        components::render_header_start(&self.core, &self.key_binds, self.show_sidebar)
+        components::render_header_start(&self.core, &self.key_binds, self.show_sidebar, self.settings.show_week_numbers)
     }
 
     fn header_end(&self) -> Vec<Element<'_, Self::Message>> {

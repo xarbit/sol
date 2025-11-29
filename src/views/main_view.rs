@@ -17,6 +17,7 @@ pub fn render_main_content<'a>(
     locale: &'a LocalePreferences,
     current_view: CalendarView,
     selected_day: Option<u32>,
+    show_week_numbers: bool,
 ) -> Element<'a, Message> {
     // Render toolbar - use week/day text for week/day views
     let period_text = match current_view {
@@ -28,7 +29,7 @@ pub fn render_main_content<'a>(
 
     // Render current calendar view
     let calendar_view = match current_view {
-        CalendarView::Month => views::render_month_view(cache.current_state(), selected_day, locale),
+        CalendarView::Month => views::render_month_view(cache.current_state(), selected_day, locale, show_week_numbers),
         CalendarView::Week => views::render_week_view(week_state, locale),
         CalendarView::Day => views::render_day_view(day_state, locale),
     };

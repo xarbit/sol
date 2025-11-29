@@ -38,6 +38,11 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::ToggleSearch => {
             app.show_search = !app.show_search;
         }
+        Message::ToggleWeekNumbers => {
+            app.settings.show_week_numbers = !app.settings.show_week_numbers;
+            // Save settings to persist the change
+            app.settings.save().ok();
+        }
         Message::ToggleCalendar(id) => {
             handle_toggle_calendar(app, id);
         }

@@ -14,6 +14,7 @@ pub fn render_header_start<'a>(
     core: &'a Core,
     key_binds: &'a HashMap<menu::KeyBind, MenuAction>,
     sidebar_visible: bool,
+    show_week_numbers: bool,
 ) -> Vec<Element<'a, Message>> {
     let sidebar_icon = if sidebar_visible {
         ICON_SIDEBAR_OPEN
@@ -45,6 +46,8 @@ pub fn render_header_start<'a>(
                         menu::Item::Button("Month View", None, MenuAction::ViewMonth),
                         menu::Item::Button("Week View", None, MenuAction::ViewWeek),
                         menu::Item::Button("Day View", None, MenuAction::ViewDay),
+                        menu::Item::Divider,
+                        menu::Item::CheckBox("Show Week Numbers", None, show_week_numbers, MenuAction::ToggleWeekNumbers),
                         menu::Item::Divider,
                         menu::Item::Button("About Sol Calendar", None, MenuAction::About),
                     ]),

@@ -11,6 +11,7 @@ pub enum MenuAction {
     ViewMonth,
     ViewWeek,
     ViewDay,
+    ToggleWeekNumbers,
     About,
 }
 
@@ -24,6 +25,7 @@ impl menu::action::MenuAction for MenuAction {
             MenuAction::ViewMonth => Message::ChangeView(CalendarView::Month),
             MenuAction::ViewWeek => Message::ChangeView(CalendarView::Week),
             MenuAction::ViewDay => Message::ChangeView(CalendarView::Day),
+            MenuAction::ToggleWeekNumbers => Message::ToggleWeekNumbers,
             MenuAction::About => Message::About,
         }
     }

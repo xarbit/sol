@@ -9,6 +9,7 @@ pub enum Message {
     SelectDay(u32),
     ToggleSidebar,
     ToggleSearch,
+    ToggleWeekNumbers,
     ToggleCalendar(String),
     OpenColorPicker(String),
     ChangeCalendarColor(String, String),
