@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="res/icons/hicolor/scalable/apps/io.github.xarbit.SolCalender.svg" alt="Sol Calendar Icon" width="128" height="128">
+  <img src="res/icons/hicolor/scalable/apps/io.github.xarbit.SolCalendar.svg" alt="Sol Calendar Icon" width="128" height="128">
 
   # Sol - a Calendar for the COSMIC Desktop
 </div>
