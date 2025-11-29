@@ -2,7 +2,7 @@ use cosmic::iced::Length;
 use cosmic::widget::{button, column, container, row, text, text_input};
 use cosmic::{widget, Element};
 
-use crate::app::{DeleteCalendarDialogState, NewCalendarDialogState};
+use crate::app::{CalendarDialogMode, CalendarDialogState, DeleteCalendarDialogState};
 use crate::components::color_picker::parse_hex_color;
 use crate::fl;
 use crate::message::Message;
@@ -12,14 +12,16 @@ use crate::ui_constants::{
     COLOR_BUTTON_SIZE_SMALL, COLOR_DEFAULT_GRAY, PADDING_STANDARD, SPACING_COLOR_GRID,
 };
 
-/// Render the new calendar dialog
-pub fn render_new_calendar_dialog(state: &NewCalendarDialogState) -> Element<'_, Message> {
+/// Render the calendar dialog (Create or Edit mode)
+pub fn render_calendar_dialog(state: &CalendarDialogState) -> Element<'_, Message> {
+    let is_edit_mode = matches!(state.mode, CalendarDialogMode::Edit { .. });
+
     let name_input = text_input(fl!("dialog-calendar-name-placeholder"), &state.name)
-        .on_input(Message::NewCalendarNameChanged)
-        .on_submit(|_| Message::ConfirmNewCalendar)
+        .on_input(Message::CalendarDialogNameChanged)
+        .on_submit(|_| Message::ConfirmCalendarDialog)
         .width(Length::Fill);
 
-    // Color picker grid - same as quick_color_picker but for dialog
+    // Color picker grid
     let color_rows = [
         ["#3B82F6", "#0EA5E9", "#2563EB", "#1E40AF", "#06B6D4"],
         ["#8B5CF6", "#A78BFA", "#7C3AED", "#EC4899", "#DB2777"],
@@ -56,7 +58,7 @@ pub fn render_new_calendar_dialog(state: &NewCalendarDialogState) -> Element<'_,
                         color_button_style(color, COLOR_BUTTON_SIZE_SMALL, border_width, border_color)
                     }),
             )
-            .on_press(Message::NewCalendarColorChanged(hex_owned))
+            .on_press(Message::CalendarDialogColorChanged(hex_owned))
             .padding(0);
 
             color_row = color_row.push(color_button);
@@ -65,21 +67,32 @@ pub fn render_new_calendar_dialog(state: &NewCalendarDialogState) -> Element<'_,
         color_grid = color_grid.push(color_row);
     }
 
-    // Dialog buttons
-    let cancel_btn = button::text(fl!("button-cancel")).on_press(Message::CancelNewCalendar);
+    // Dialog buttons - text changes based on mode
+    let cancel_btn = button::text(fl!("button-cancel")).on_press(Message::CancelCalendarDialog);
 
-    let create_btn = button::suggested(fl!("button-create")).on_press(Message::ConfirmNewCalendar);
+    let confirm_btn = if is_edit_mode {
+        button::suggested(fl!("button-save")).on_press(Message::ConfirmCalendarDialog)
+    } else {
+        button::suggested(fl!("button-create")).on_press(Message::ConfirmCalendarDialog)
+    };
 
     let buttons = row()
         .spacing(8)
         .push(widget::horizontal_space())
         .push(cancel_btn)
-        .push(create_btn);
+        .push(confirm_btn);
+
+    // Dialog title changes based on mode
+    let title = if is_edit_mode {
+        fl!("dialog-edit-calendar-title")
+    } else {
+        fl!("dialog-new-calendar-title")
+    };
 
     // Dialog content
     let content = column()
         .spacing(16)
-        .push(text::title4(fl!("dialog-new-calendar-title")))
+        .push(text::title4(title))
         .push(
             column()
                 .spacing(8)

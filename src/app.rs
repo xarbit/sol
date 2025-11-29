@@ -18,12 +18,26 @@ use std::collections::HashMap;
 
 const APP_ID: &str = "io.github.xarbit.SolCalendar";
 
-/// State for the new calendar dialog
-#[derive(Debug, Clone, Default)]
-pub struct NewCalendarDialogState {
-    /// Calendar name being entered
+/// Mode for the calendar dialog (Create or Edit)
+#[derive(Debug, Clone, PartialEq)]
+pub enum CalendarDialogMode {
+    /// Creating a new calendar
+    Create,
+    /// Editing an existing calendar
+    Edit {
+        /// ID of the calendar being edited
+        calendar_id: String,
+    },
+}
+
+/// State for the calendar dialog (used for both Create and Edit)
+#[derive(Debug, Clone)]
+pub struct CalendarDialogState {
+    /// Dialog mode - Create or Edit
+    pub mode: CalendarDialogMode,
+    /// Calendar name being entered/edited
     pub name: String,
-    /// Selected color for the new calendar
+    /// Selected color for the calendar
     pub color: String,
 }
 
@@ -67,8 +81,8 @@ pub struct CosmicCalendar {
     pub cached_month_events: std::collections::HashMap<u32, Vec<crate::components::DisplayEvent>>,
     /// Color of the selected calendar (cached for quick event input)
     pub selected_calendar_color: String,
-    /// New calendar dialog state - None when dialog is closed
-    pub new_calendar_dialog: Option<NewCalendarDialogState>,
+    /// Calendar dialog state (for Create/Edit) - None when dialog is closed
+    pub calendar_dialog: Option<CalendarDialogState>,
     /// Delete calendar confirmation dialog state - None when dialog is closed
     pub delete_calendar_dialog: Option<DeleteCalendarDialogState>,
 }
@@ -145,7 +159,7 @@ impl CosmicCalendar {
             quick_event_editing: None,
             cached_month_events,
             selected_calendar_color,
-            new_calendar_dialog: None,
+            calendar_dialog: None,
             delete_calendar_dialog: None,
         }
     }

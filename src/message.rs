@@ -24,16 +24,20 @@ pub enum Message {
     OpenColorPicker(String),
     ChangeCalendarColor(String, String),
     CloseColorPicker,
-    /// Open the new calendar dialog
+    /// Open the calendar dialog in Create mode
     OpenNewCalendarDialog,
-    /// Update new calendar name while typing
-    NewCalendarNameChanged(String),
-    /// Update new calendar color selection
-    NewCalendarColorChanged(String),
-    /// Confirm creating the new calendar
-    ConfirmNewCalendar,
-    /// Cancel new calendar dialog
-    CancelNewCalendar,
+    /// Open the calendar dialog in Edit mode for a specific calendar
+    OpenEditCalendarDialog(String),
+    /// Edit calendar by index (from context menu)
+    EditCalendarByIndex(usize),
+    /// Update calendar name while typing in dialog
+    CalendarDialogNameChanged(String),
+    /// Update calendar color selection in dialog
+    CalendarDialogColorChanged(String),
+    /// Confirm the calendar dialog (Create or Edit)
+    ConfirmCalendarDialog,
+    /// Cancel the calendar dialog
+    CancelCalendarDialog,
     /// Delete the currently selected calendar (with confirmation)
     DeleteSelectedCalendar,
     /// Request to delete a specific calendar by ID (opens confirmation dialog)

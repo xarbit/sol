@@ -42,7 +42,7 @@ week-abbr = Wk
 
 # Calendar actions
 calendar-add = Add Calendar
-calendar-edit = Edit
+calendar-edit = Edit Calendar
 calendar-delete = Delete Calendar
 calendar-select = Select Calendar
 calendar-toggle = Toggle visibility
@@ -97,8 +97,9 @@ button-delete = Delete
 button-close = Close
 button-create = Create
 
-# Dialog - New Calendar
+# Dialog - Calendar (New/Edit)
 dialog-new-calendar-title = New Calendar
+dialog-edit-calendar-title = Edit Calendar
 dialog-calendar-name = Name
 dialog-calendar-name-placeholder = Calendar name
 dialog-calendar-color = Color

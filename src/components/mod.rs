@@ -9,7 +9,7 @@ mod mini_calendar;
 mod time_grid;
 mod toolbar;
 
-pub use calendar_dialog::{render_new_calendar_dialog, render_delete_calendar_dialog};
+pub use calendar_dialog::{render_calendar_dialog, render_delete_calendar_dialog};
 pub use calendar_list::render_calendar_list;
 pub use color_picker::{render_color_indicator, render_quick_color_picker};
 pub use day_cell::{render_day_cell, render_day_cell_with_events, DayCellConfig};
