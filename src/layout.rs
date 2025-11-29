@@ -1,5 +1,5 @@
 use crate::app::CosmicCalendar;
-use crate::components::{render_calendar_dialog, render_delete_calendar_dialog};
+use crate::components::{render_calendar_dialog, render_delete_calendar_dialog, render_event_dialog};
 use crate::message::Message;
 use crate::styles;
 use crate::ui_constants::SIDEBAR_WIDTH;
@@ -32,7 +32,12 @@ pub fn render_layout(app: &CosmicCalendar) -> Element<'_, Message> {
         base_content
     };
 
-    // Show dialog overlays if any are open
+    // Show dialog overlays if any are open (event dialog takes priority)
+    if let Some(ref dialog_state) = app.event_dialog {
+        let dialog = render_event_dialog(dialog_state, app.calendar_manager.sources());
+        return stack![with_sidebar, dialog].into();
+    }
+
     if let Some(ref dialog_state) = app.calendar_dialog {
         let dialog = render_calendar_dialog(dialog_state);
         return stack![with_sidebar, dialog].into();

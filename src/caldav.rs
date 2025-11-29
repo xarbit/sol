@@ -3,14 +3,88 @@ use reqwest::blocking::Client;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 
+/// Repeat frequency for recurring events
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum RepeatFrequency {
+    #[default]
+    Never,
+    Daily,
+    Weekly,
+    Biweekly,
+    Monthly,
+    Yearly,
+    Custom(String), // For custom RRULE strings
+}
+
+/// Alert timing before an event
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AlertTime {
+    None,
+    AtTime,
+    FiveMinutes,
+    TenMinutes,
+    FifteenMinutes,
+    ThirtyMinutes,
+    OneHour,
+    TwoHours,
+    OneDay,
+    TwoDays,
+    OneWeek,
+    Custom(i32), // Custom minutes before
+}
+
+impl Default for AlertTime {
+    fn default() -> Self {
+        AlertTime::None
+    }
+}
+
+/// Travel time duration options
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum TravelTime {
+    #[default]
+    None,
+    FiveMinutes,
+    TenMinutes,
+    FifteenMinutes,
+    ThirtyMinutes,
+    FortyFiveMinutes,
+    OneHour,
+    OneHourThirty,
+    TwoHours,
+    Custom(i32), // Custom minutes
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CalendarEvent {
+    /// Unique identifier for the event
     pub uid: String,
+    /// Event title/summary
     pub summary: String,
-    pub description: Option<String>,
-    pub start: chrono::DateTime<chrono::Utc>,
-    pub end: chrono::DateTime<chrono::Utc>,
+    /// Event location (address or place name)
     pub location: Option<String>,
+    /// Whether this is an all-day event
+    pub all_day: bool,
+    /// Start date/time
+    pub start: chrono::DateTime<chrono::Utc>,
+    /// End date/time
+    pub end: chrono::DateTime<chrono::Utc>,
+    /// Travel time before the event
+    pub travel_time: TravelTime,
+    /// Repeat/recurrence settings
+    pub repeat: RepeatFrequency,
+    /// Invitees (email addresses)
+    pub invitees: Vec<String>,
+    /// Alert/reminder settings
+    pub alert: AlertTime,
+    /// Second alert (optional)
+    pub alert_second: Option<AlertTime>,
+    /// File attachments (paths or URLs)
+    pub attachments: Vec<String>,
+    /// URL associated with the event
+    pub url: Option<String>,
+    /// Notes/description
+    pub notes: Option<String>,
 }
 
 // CalDAV client for future use
@@ -87,12 +161,16 @@ impl CalDavClient {
         let mut ical_event = Event::new();
         ical_event.summary(&event.summary);
 
-        if let Some(desc) = &event.description {
-            ical_event.description(desc);
+        if let Some(notes) = &event.notes {
+            ical_event.description(notes);
         }
 
         if let Some(loc) = &event.location {
             ical_event.location(loc);
+        }
+
+        if let Some(url) = &event.url {
+            ical_event.url(url);
         }
 
         ical_event.starts(event.start);
@@ -155,13 +233,21 @@ mod tests {
             "pass".to_string(),
         );
 
-        let event = CalendarEvent {
+        let _event = CalendarEvent {
             uid: "test-event-1".to_string(),
             summary: "Test Event".to_string(),
-            description: Some("A test event".to_string()),
+            location: Some("Test Location".to_string()),
+            all_day: false,
             start: chrono::Utc::now(),
             end: chrono::Utc::now() + chrono::Duration::hours(1),
-            location: Some("Test Location".to_string()),
+            travel_time: TravelTime::None,
+            repeat: RepeatFrequency::Never,
+            invitees: vec![],
+            alert: AlertTime::FifteenMinutes,
+            alert_second: None,
+            attachments: vec![],
+            url: None,
+            notes: Some("A test event".to_string()),
         };
 
         // Note: This test would fail without a real CalDAV server

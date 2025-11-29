@@ -3,10 +3,10 @@ use rusqlite::{Connection, params, Result as SqlResult};
 use std::error::Error;
 use std::path::PathBuf;
 
-use crate::caldav::CalendarEvent;
+use crate::caldav::{AlertTime, CalendarEvent, RepeatFrequency, TravelTime};
 
 /// Current database schema version for migrations
-const SCHEMA_VERSION: i32 = 1;
+const SCHEMA_VERSION: i32 = 2;
 
 /// Database connection wrapper with encryption support
 pub struct Database {
@@ -136,12 +136,18 @@ impl Database {
                 uid TEXT PRIMARY KEY,
                 calendar_id TEXT NOT NULL,
                 summary TEXT NOT NULL,
-                description TEXT,
                 location TEXT,
+                all_day INTEGER NOT NULL DEFAULT 0,
                 start_time TEXT NOT NULL,
                 end_time TEXT NOT NULL,
-                all_day INTEGER NOT NULL DEFAULT 0,
-                recurrence_rule TEXT,
+                travel_time TEXT NOT NULL DEFAULT 'None',
+                repeat TEXT NOT NULL DEFAULT 'Never',
+                invitees TEXT NOT NULL DEFAULT '[]',
+                alert TEXT NOT NULL DEFAULT 'None',
+                alert_second TEXT,
+                attachments TEXT NOT NULL DEFAULT '[]',
+                url TEXT,
+                notes TEXT,
                 created_at TEXT NOT NULL DEFAULT (datetime('now')),
                 updated_at TEXT NOT NULL DEFAULT (datetime('now'))
             );
@@ -157,12 +163,50 @@ impl Database {
     }
 
     /// Run migrations from old version to current
-    fn migrate(&mut self, _from_version: i32) -> Result<(), Box<dyn Error>> {
-        // Future migrations go here
-        // match _from_version {
-        //     1 => { /* migrate from v1 to v2 */ }
-        //     _ => {}
-        // }
+    fn migrate(&mut self, from_version: i32) -> Result<(), Box<dyn Error>> {
+        if from_version < 2 {
+            // Migrate from v1 to v2: Add new event fields
+            // We need to recreate the table since SQLite doesn't support adding
+            // columns with non-null defaults easily, and we're changing structure
+            self.conn.execute_batch(
+                r#"
+                -- Create new events table with all fields
+                CREATE TABLE IF NOT EXISTS events_new (
+                    uid TEXT PRIMARY KEY,
+                    calendar_id TEXT NOT NULL,
+                    summary TEXT NOT NULL,
+                    location TEXT,
+                    all_day INTEGER NOT NULL DEFAULT 0,
+                    start_time TEXT NOT NULL,
+                    end_time TEXT NOT NULL,
+                    travel_time TEXT NOT NULL DEFAULT 'None',
+                    repeat TEXT NOT NULL DEFAULT 'Never',
+                    invitees TEXT NOT NULL DEFAULT '[]',
+                    alert TEXT NOT NULL DEFAULT 'None',
+                    alert_second TEXT,
+                    attachments TEXT NOT NULL DEFAULT '[]',
+                    url TEXT,
+                    notes TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                );
+
+                -- Copy existing data (description becomes notes)
+                INSERT INTO events_new (uid, calendar_id, summary, location, all_day, start_time, end_time, notes, created_at, updated_at)
+                SELECT uid, calendar_id, summary, location, all_day, start_time, end_time, description, created_at, updated_at
+                FROM events;
+
+                -- Drop old table and rename new one
+                DROP TABLE events;
+                ALTER TABLE events_new RENAME TO events;
+
+                -- Recreate indexes
+                CREATE INDEX IF NOT EXISTS idx_events_start_time ON events(start_time);
+                CREATE INDEX IF NOT EXISTS idx_events_calendar_id ON events(calendar_id);
+                CREATE INDEX IF NOT EXISTS idx_events_calendar_date ON events(calendar_id, start_time);
+                "#,
+            )?;
+        }
 
         self.set_schema_version(SCHEMA_VERSION)?;
         Ok(())
@@ -173,20 +217,35 @@ impl Database {
 
     /// Insert a new event
     pub fn insert_event(&self, calendar_id: &str, event: &CalendarEvent) -> Result<(), Box<dyn Error>> {
+        let travel_time = serde_json::to_string(&event.travel_time)?;
+        let repeat = serde_json::to_string(&event.repeat)?;
+        let invitees = serde_json::to_string(&event.invitees)?;
+        let alert = serde_json::to_string(&event.alert)?;
+        let alert_second = event.alert_second.as_ref().map(|a| serde_json::to_string(a)).transpose()?;
+        let attachments = serde_json::to_string(&event.attachments)?;
+
         self.conn.execute(
             r#"
-            INSERT INTO events (uid, calendar_id, summary, description, location, start_time, end_time, all_day)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+            INSERT INTO events (uid, calendar_id, summary, location, all_day, start_time, end_time,
+                               travel_time, repeat, invitees, alert, alert_second, attachments, url, notes)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15)
             "#,
             params![
                 event.uid,
                 calendar_id,
                 event.summary,
-                event.description,
                 event.location,
+                event.all_day,
                 event.start.to_rfc3339(),
                 event.end.to_rfc3339(),
-                0, // all_day - TODO: add to CalendarEvent
+                travel_time,
+                repeat,
+                invitees,
+                alert,
+                alert_second,
+                attachments,
+                event.url,
+                event.notes,
             ],
         )?;
         Ok(())
@@ -194,24 +253,47 @@ impl Database {
 
     /// Update an existing event
     pub fn update_event(&self, event: &CalendarEvent) -> Result<(), Box<dyn Error>> {
+        let travel_time = serde_json::to_string(&event.travel_time)?;
+        let repeat = serde_json::to_string(&event.repeat)?;
+        let invitees = serde_json::to_string(&event.invitees)?;
+        let alert = serde_json::to_string(&event.alert)?;
+        let alert_second = event.alert_second.as_ref().map(|a| serde_json::to_string(a)).transpose()?;
+        let attachments = serde_json::to_string(&event.attachments)?;
+
         self.conn.execute(
             r#"
             UPDATE events SET
                 summary = ?2,
-                description = ?3,
-                location = ?4,
+                location = ?3,
+                all_day = ?4,
                 start_time = ?5,
                 end_time = ?6,
+                travel_time = ?7,
+                repeat = ?8,
+                invitees = ?9,
+                alert = ?10,
+                alert_second = ?11,
+                attachments = ?12,
+                url = ?13,
+                notes = ?14,
                 updated_at = datetime('now')
             WHERE uid = ?1
             "#,
             params![
                 event.uid,
                 event.summary,
-                event.description,
                 event.location,
+                event.all_day,
                 event.start.to_rfc3339(),
                 event.end.to_rfc3339(),
+                travel_time,
+                repeat,
+                invitees,
+                alert,
+                alert_second,
+                attachments,
+                event.url,
+                event.notes,
             ],
         )?;
         Ok(())
@@ -226,24 +308,41 @@ impl Database {
     /// Get all events for a calendar
     pub fn get_events_for_calendar(&self, calendar_id: &str) -> Result<Vec<CalendarEvent>, Box<dyn Error>> {
         let mut stmt = self.conn.prepare(
-            "SELECT uid, summary, description, location, start_time, end_time FROM events WHERE calendar_id = ?1"
+            r#"SELECT uid, summary, location, all_day, start_time, end_time,
+                      travel_time, repeat, invitees, alert, alert_second,
+                      attachments, url, notes
+               FROM events WHERE calendar_id = ?1"#
         )?;
 
         let events = stmt.query_map(params![calendar_id], |row| {
             let start_str: String = row.get(4)?;
             let end_str: String = row.get(5)?;
+            let travel_time_str: String = row.get(6)?;
+            let repeat_str: String = row.get(7)?;
+            let invitees_str: String = row.get(8)?;
+            let alert_str: String = row.get(9)?;
+            let alert_second_str: Option<String> = row.get(10)?;
+            let attachments_str: String = row.get(11)?;
 
             Ok(CalendarEvent {
                 uid: row.get(0)?,
                 summary: row.get(1)?,
-                description: row.get(2)?,
-                location: row.get(3)?,
+                location: row.get(2)?,
+                all_day: row.get(3)?,
                 start: DateTime::parse_from_rfc3339(&start_str)
                     .map(|dt| dt.with_timezone(&Utc))
                     .unwrap_or_else(|_| Utc::now()),
                 end: DateTime::parse_from_rfc3339(&end_str)
                     .map(|dt| dt.with_timezone(&Utc))
                     .unwrap_or_else(|_| Utc::now()),
+                travel_time: serde_json::from_str(&travel_time_str).unwrap_or_default(),
+                repeat: serde_json::from_str(&repeat_str).unwrap_or_default(),
+                invitees: serde_json::from_str(&invitees_str).unwrap_or_default(),
+                alert: serde_json::from_str(&alert_str).unwrap_or_default(),
+                alert_second: alert_second_str.and_then(|s| serde_json::from_str(&s).ok()),
+                attachments: serde_json::from_str(&attachments_str).unwrap_or_default(),
+                url: row.get(12)?,
+                notes: row.get(13)?,
             })
         })?
         .collect::<SqlResult<Vec<_>>>()?;
@@ -296,10 +395,18 @@ mod tests {
         let event = CalendarEvent {
             uid: "event1".to_string(),
             summary: "Test Event".to_string(),
-            description: Some("A test event".to_string()),
             location: Some("Test Location".to_string()),
+            all_day: false,
             start: Utc.with_ymd_and_hms(2025, 11, 29, 10, 0, 0).unwrap(),
             end: Utc.with_ymd_and_hms(2025, 11, 29, 11, 0, 0).unwrap(),
+            travel_time: TravelTime::None,
+            repeat: RepeatFrequency::Never,
+            invitees: vec![],
+            alert: AlertTime::FifteenMinutes,
+            alert_second: None,
+            attachments: vec![],
+            url: None,
+            notes: Some("A test event".to_string()),
         };
 
         db.insert_event("cal1", &event).unwrap();

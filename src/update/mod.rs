@@ -24,8 +24,9 @@ use calendar::{
     handle_open_calendar_dialog_edit, handle_request_delete_calendar, handle_toggle_calendar,
 };
 use event::{
-    handle_cancel_quick_event, handle_commit_quick_event, handle_delete_event,
-    handle_quick_event_text_changed, handle_start_quick_event,
+    handle_cancel_event_dialog, handle_cancel_quick_event, handle_commit_quick_event,
+    handle_confirm_event_dialog, handle_delete_event, handle_open_edit_event_dialog,
+    handle_open_new_event_dialog, handle_quick_event_text_changed, handle_start_quick_event,
 };
 use navigation::{handle_next_period, handle_previous_period};
 
@@ -167,7 +168,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             app.delete_calendar_dialog = None;
         }
 
-        // === Event Management ===
+        // === Event Management - Quick Events ===
         Message::StartQuickEvent(date) => {
             handle_start_quick_event(app, date);
         }
@@ -184,6 +185,179 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             handle_delete_event(app, uid);
         }
 
+        // === Event Management - Event Dialog ===
+        Message::OpenNewEventDialog => {
+            handle_open_new_event_dialog(app);
+        }
+        Message::OpenEditEventDialog(uid) => {
+            handle_open_edit_event_dialog(app, uid);
+        }
+        Message::EventDialogTitleChanged(title) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.title = title;
+            }
+        }
+        Message::EventDialogLocationChanged(location) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.location = location;
+            }
+        }
+        Message::EventDialogAllDayToggled(all_day) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.all_day = all_day;
+            }
+        }
+        Message::EventDialogStartDateInputChanged(input) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.start_date_input = input.clone();
+                // Try to parse the date
+                if let Ok(date) = chrono::NaiveDate::parse_from_str(&input, "%Y-%m-%d") {
+                    dialog.start_date = date;
+                    // If end date is before start, adjust it
+                    if dialog.end_date < date {
+                        dialog.end_date = date;
+                        dialog.end_date_input = date.format("%Y-%m-%d").to_string();
+                    }
+                }
+            }
+        }
+        Message::EventDialogStartDateChanged(date) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.start_date = date;
+                dialog.start_date_input = date.format("%Y-%m-%d").to_string();
+                // If end date is before start, adjust it
+                if dialog.end_date < date {
+                    dialog.end_date = date;
+                    dialog.end_date_input = date.format("%Y-%m-%d").to_string();
+                }
+            }
+        }
+        Message::EventDialogStartTimeInputChanged(input) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.start_time_input = input.clone();
+                // Try to parse the time
+                if let Ok(time) = chrono::NaiveTime::parse_from_str(&input, "%H:%M") {
+                    dialog.start_time = Some(time);
+                }
+            }
+        }
+        Message::EventDialogStartTimeChanged(time) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.start_time = time;
+                dialog.start_time_input = time
+                    .map(|t| t.format("%H:%M").to_string())
+                    .unwrap_or_default();
+            }
+        }
+        Message::EventDialogEndDateInputChanged(input) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.end_date_input = input.clone();
+                // Try to parse the date
+                if let Ok(date) = chrono::NaiveDate::parse_from_str(&input, "%Y-%m-%d") {
+                    dialog.end_date = date;
+                }
+            }
+        }
+        Message::EventDialogEndDateChanged(date) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.end_date = date;
+                dialog.end_date_input = date.format("%Y-%m-%d").to_string();
+            }
+        }
+        Message::EventDialogEndTimeInputChanged(input) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.end_time_input = input.clone();
+                // Try to parse the time
+                if let Ok(time) = chrono::NaiveTime::parse_from_str(&input, "%H:%M") {
+                    dialog.end_time = Some(time);
+                }
+            }
+        }
+        Message::EventDialogEndTimeChanged(time) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.end_time = time;
+                dialog.end_time_input = time
+                    .map(|t| t.format("%H:%M").to_string())
+                    .unwrap_or_default();
+            }
+        }
+        Message::EventDialogTravelTimeChanged(travel_time) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.travel_time = travel_time;
+            }
+        }
+        Message::EventDialogRepeatChanged(repeat) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.repeat = repeat;
+            }
+        }
+        Message::EventDialogCalendarChanged(calendar_id) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.calendar_id = calendar_id;
+            }
+        }
+        Message::EventDialogInviteeInputChanged(input) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.invitee_input = input;
+            }
+        }
+        Message::EventDialogAddInvitee => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                let email = dialog.invitee_input.trim().to_string();
+                if !email.is_empty() && !dialog.invitees.contains(&email) {
+                    dialog.invitees.push(email);
+                    dialog.invitee_input.clear();
+                }
+            }
+        }
+        Message::EventDialogRemoveInvitee(index) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                if index < dialog.invitees.len() {
+                    dialog.invitees.remove(index);
+                }
+            }
+        }
+        Message::EventDialogAlertChanged(alert) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.alert = alert;
+            }
+        }
+        Message::EventDialogAlertSecondChanged(alert) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.alert_second = alert;
+            }
+        }
+        Message::EventDialogAddAttachment(path) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                if !dialog.attachments.contains(&path) {
+                    dialog.attachments.push(path);
+                }
+            }
+        }
+        Message::EventDialogRemoveAttachment(index) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                if index < dialog.attachments.len() {
+                    dialog.attachments.remove(index);
+                }
+            }
+        }
+        Message::EventDialogUrlChanged(url) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.url = url;
+            }
+        }
+        Message::EventDialogNotesChanged(notes) => {
+            if let Some(ref mut dialog) = app.event_dialog {
+                dialog.notes = notes;
+            }
+        }
+        Message::ConfirmEventDialog => {
+            handle_confirm_event_dialog(app);
+        }
+        Message::CancelEventDialog => {
+            handle_cancel_event_dialog(app);
+        }
+
         // === Mini Calendar ===
         Message::MiniCalendarPrevMonth => {
             app.navigate_mini_calendar_previous();
@@ -194,8 +368,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
 
         // === Menu Actions ===
         Message::NewEvent => {
-            // TODO: Open new event dialog
-            println!("New Event requested");
+            handle_open_new_event_dialog(app);
         }
         Message::ImportICal => {
             // TODO: Open file picker for iCal import

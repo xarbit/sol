@@ -50,6 +50,55 @@ pub struct DeleteCalendarDialogState {
     pub calendar_name: String,
 }
 
+/// State for the event dialog (Create or Edit)
+#[derive(Debug, Clone)]
+pub struct EventDialogState {
+    /// Event UID (None for new events, Some for editing)
+    pub editing_uid: Option<String>,
+    /// Event title/summary
+    pub title: String,
+    /// Event location
+    pub location: String,
+    /// Whether this is an all-day event
+    pub all_day: bool,
+    /// Start date
+    pub start_date: chrono::NaiveDate,
+    /// Start date input buffer (for editing)
+    pub start_date_input: String,
+    /// Start time (None for all-day events)
+    pub start_time: Option<chrono::NaiveTime>,
+    /// Start time input buffer (for editing)
+    pub start_time_input: String,
+    /// End date
+    pub end_date: chrono::NaiveDate,
+    /// End date input buffer (for editing)
+    pub end_date_input: String,
+    /// End time (None for all-day events)
+    pub end_time: Option<chrono::NaiveTime>,
+    /// End time input buffer (for editing)
+    pub end_time_input: String,
+    /// Travel time before the event
+    pub travel_time: crate::caldav::TravelTime,
+    /// Repeat/recurrence settings
+    pub repeat: crate::caldav::RepeatFrequency,
+    /// Selected calendar ID for the event
+    pub calendar_id: String,
+    /// Invitees (email addresses)
+    pub invitees: Vec<String>,
+    /// New invitee being typed (input buffer)
+    pub invitee_input: String,
+    /// Alert/reminder settings
+    pub alert: crate::caldav::AlertTime,
+    /// Second alert (optional)
+    pub alert_second: Option<crate::caldav::AlertTime>,
+    /// File attachments (paths or URLs)
+    pub attachments: Vec<String>,
+    /// URL associated with the event
+    pub url: String,
+    /// Notes/description
+    pub notes: String,
+}
+
 /// Main application state
 pub struct CosmicCalendar {
     pub core: Core,
@@ -85,6 +134,8 @@ pub struct CosmicCalendar {
     pub calendar_dialog: Option<CalendarDialogState>,
     /// Delete calendar confirmation dialog state - None when dialog is closed
     pub delete_calendar_dialog: Option<DeleteCalendarDialogState>,
+    /// Event dialog state (for Create/Edit) - None when dialog is closed
+    pub event_dialog: Option<EventDialogState>,
 }
 
 impl CosmicCalendar {
@@ -161,6 +212,7 @@ impl CosmicCalendar {
             selected_calendar_color,
             calendar_dialog: None,
             delete_calendar_dialog: None,
+            event_dialog: None,
         }
     }
 

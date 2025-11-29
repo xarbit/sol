@@ -84,11 +84,61 @@ event-new = New Event
 event-edit = Edit Event
 event-delete = Delete Event
 event-title = Title
+event-title-placeholder = Event title
 event-location = Location
-event-description = Description
-event-start = Start
-event-end = End
+event-location-placeholder = Add location
 event-all-day = All day
+event-starts = Starts
+event-ends = Ends
+event-datetime-section = Date & Time
+event-travel-time = Travel Time
+event-repeat = Repeat
+event-schedule-section = Schedule
+event-calendar = Calendar
+event-no-calendar = No calendar
+event-invitees = Invitees
+event-invitee-placeholder = Add email address
+event-alert = Alert
+event-attachments = Attachments
+event-no-attachments = No attachments
+event-url = URL
+event-url-placeholder = Add URL
+event-notes = Notes
+event-notes-placeholder = Add notes
+event-additional-section = Additional
+
+# Travel Time Options
+travel-time-none = None
+travel-time-5min = 5 min
+travel-time-10min = 10 min
+travel-time-15min = 15 min
+travel-time-30min = 30 min
+travel-time-45min = 45 min
+travel-time-1hour = 1 hour
+travel-time-1hour30 = 1.5 hours
+travel-time-2hours = 2 hours
+
+# Repeat Options
+repeat-never = Never
+repeat-daily = Daily
+repeat-weekly = Weekly
+repeat-biweekly = Every 2 weeks
+repeat-monthly = Monthly
+repeat-yearly = Yearly
+repeat-custom = Custom
+
+# Alert Options
+alert-none = None
+alert-at-time = At time
+alert-5min = 5 min before
+alert-10min = 10 min before
+alert-15min = 15 min before
+alert-30min = 30 min before
+alert-1hour = 1 hour before
+alert-2hours = 2 hours before
+alert-1day = 1 day before
+alert-2days = 2 days before
+alert-1week = 1 week before
 
 # Buttons
 button-save = Save

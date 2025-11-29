@@ -1,4 +1,5 @@
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveTime};
+use crate::caldav::{AlertTime, RepeatFrequency, TravelTime};
 use crate::views::CalendarView;
 
 #[derive(Debug, Clone)]
@@ -54,7 +55,7 @@ pub enum Message {
     /// Cancel calendar deletion
     CancelDeleteCalendar,
 
-    // Event management
+    // Event management - Quick events
     /// Start creating a quick event on a specific date
     StartQuickEvent(NaiveDate),
     /// Update the quick event text while editing
@@ -65,6 +66,62 @@ pub enum Message {
     CancelQuickEvent,
     /// Delete an event by its UID
     DeleteEvent(String),
+
+    // Event management - Event dialog
+    /// Open the event dialog for creating a new event
+    OpenNewEventDialog,
+    /// Open the event dialog for editing an existing event
+    OpenEditEventDialog(String),
+    /// Update event title in dialog
+    EventDialogTitleChanged(String),
+    /// Update event location in dialog
+    EventDialogLocationChanged(String),
+    /// Toggle all-day event in dialog
+    EventDialogAllDayToggled(bool),
+    /// Update event start date input text
+    EventDialogStartDateInputChanged(String),
+    /// Update event start date in dialog
+    EventDialogStartDateChanged(NaiveDate),
+    /// Update event start time input text
+    EventDialogStartTimeInputChanged(String),
+    /// Update event start time in dialog
+    EventDialogStartTimeChanged(Option<NaiveTime>),
+    /// Update event end date input text
+    EventDialogEndDateInputChanged(String),
+    /// Update event end date in dialog
+    EventDialogEndDateChanged(NaiveDate),
+    /// Update event end time input text
+    EventDialogEndTimeInputChanged(String),
+    /// Update event end time in dialog
+    EventDialogEndTimeChanged(Option<NaiveTime>),
+    /// Update travel time in dialog
+    EventDialogTravelTimeChanged(TravelTime),
+    /// Update repeat frequency in dialog
+    EventDialogRepeatChanged(RepeatFrequency),
+    /// Update selected calendar in dialog
+    EventDialogCalendarChanged(String),
+    /// Update invitee input text
+    EventDialogInviteeInputChanged(String),
+    /// Add an invitee to the list
+    EventDialogAddInvitee,
+    /// Remove an invitee from the list
+    EventDialogRemoveInvitee(usize),
+    /// Update alert setting in dialog
+    EventDialogAlertChanged(AlertTime),
+    /// Update second alert setting in dialog
+    EventDialogAlertSecondChanged(Option<AlertTime>),
+    /// Add an attachment
+    EventDialogAddAttachment(String),
+    /// Remove an attachment
+    EventDialogRemoveAttachment(usize),
+    /// Update URL in dialog
+    EventDialogUrlChanged(String),
+    /// Update notes in dialog
+    EventDialogNotesChanged(String),
+    /// Confirm the event dialog (Create or Save)
+    ConfirmEventDialog,
+    /// Cancel the event dialog
+    CancelEventDialog,
 
     // Mini calendar
     MiniCalendarPrevMonth,

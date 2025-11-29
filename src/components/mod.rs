@@ -4,6 +4,7 @@ pub mod color_picker;
 mod day_cell;
 mod day_header;
 mod event_chip;
+mod event_dialog;
 mod header_menu;
 mod mini_calendar;
 mod time_grid;
@@ -11,6 +12,7 @@ mod toolbar;
 
 pub use calendar_dialog::{render_calendar_dialog, render_delete_calendar_dialog};
 pub use calendar_list::render_calendar_list;
+pub use event_dialog::render_event_dialog;
 pub use color_picker::{render_color_indicator, render_quick_color_picker};
 pub use day_cell::{render_day_cell, render_day_cell_with_events, DayCellConfig};
 pub use day_header::{render_day_header, DayHeaderConfig};
