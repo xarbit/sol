@@ -44,9 +44,10 @@ pub fn render_header_start<'a>(
                         menu::Item::Button(fl!("menu-settings"), None, MenuAction::Settings),
                     ]),
                     (fl!("menu-view"), vec![
-                        menu::Item::Button(fl!("menu-month-view"), None, MenuAction::ViewMonth),
-                        menu::Item::Button(fl!("menu-week-view"), None, MenuAction::ViewWeek),
                         menu::Item::Button(fl!("menu-day-view"), None, MenuAction::ViewDay),
+                        menu::Item::Button(fl!("menu-week-view"), None, MenuAction::ViewWeek),
+                        menu::Item::Button(fl!("menu-month-view"), None, MenuAction::ViewMonth),
+                        menu::Item::Button(fl!("menu-year-view"), None, MenuAction::ViewYear),
                         menu::Item::Divider,
                         menu::Item::CheckBox(fl!("menu-show-week-numbers"), None, show_week_numbers, MenuAction::ToggleWeekNumbers),
                         menu::Item::Divider,

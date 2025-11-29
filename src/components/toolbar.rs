@@ -37,7 +37,7 @@ pub fn render_toolbar<'a>(
         .into()
 }
 
-/// Render the view switcher (Day/Week/Month buttons)
+/// Render the view switcher (Day/Week/Month/Year buttons)
 fn render_view_switcher(current_view: CalendarView) -> Element<'static, Message> {
     row()
         .spacing(SPACING_SMALL)
@@ -60,6 +60,13 @@ fn render_view_switcher(current_view: CalendarView) -> Element<'static, Message>
                 widget::button::suggested(fl!("view-month")).on_press(Message::ChangeView(CalendarView::Month))
             } else {
                 widget::button::standard(fl!("view-month")).on_press(Message::ChangeView(CalendarView::Month))
+            }
+        )
+        .push(
+            if current_view == CalendarView::Year {
+                widget::button::suggested(fl!("view-year")).on_press(Message::ChangeView(CalendarView::Year))
+            } else {
+                widget::button::standard(fl!("view-year")).on_press(Message::ChangeView(CalendarView::Year))
             }
         )
         .into()

@@ -5,7 +5,7 @@ use crate::fl;
 use crate::locale::LocalePreferences;
 use crate::menu_action::MenuAction;
 use crate::message::Message;
-use crate::models::{WeekState, DayState};
+use crate::models::{WeekState, DayState, YearState};
 use crate::settings::AppSettings;
 use crate::storage::LocalStorage;
 use crate::views::{self, CalendarView};
@@ -34,6 +34,7 @@ pub struct CosmicCalendar {
     pub cache: CalendarCache,
     pub week_state: WeekState,
     pub day_state: DayState,
+    pub year_state: YearState,
     pub locale: LocalePreferences,
     pub settings: AppSettings,
     pub about: about::About,
@@ -109,6 +110,15 @@ impl CosmicCalendar {
             MenuAction::ViewDay,
         );
 
+        // Year View: Ctrl+4
+        key_binds.insert(
+            menu::KeyBind {
+                modifiers: vec![menu::key_bind::Modifier::Ctrl],
+                key: Key::Character("4".into()),
+            },
+            MenuAction::ViewYear,
+        );
+
         CosmicCalendar {
             core,
             current_view: CalendarView::Month,
@@ -123,6 +133,7 @@ impl CosmicCalendar {
             cache,
             week_state: WeekState::current_with_first_day(locale.first_day_of_week, &locale),
             day_state: DayState::current(&locale),
+            year_state: YearState::current(),
             locale,
             settings,
             about,
@@ -196,7 +207,7 @@ impl CosmicCalendar {
 
     /// Render the main content area (toolbar + calendar view)
     pub fn render_main_content(&self) -> Element<'_, Message> {
-        views::render_main_content(&self.cache, &self.week_state, &self.day_state, &self.locale, self.current_view, self.selected_day, self.settings.show_week_numbers)
+        views::render_main_content(&self.cache, &self.week_state, &self.day_state, &self.year_state, &self.locale, self.current_view, self.selected_day, self.settings.show_week_numbers)
     }
 }
 
@@ -300,6 +311,11 @@ impl Application for CosmicCalendar {
                 // Check for Ctrl+3 (Day View)
                 if matches!(key, Key::Character(ref s) if s == "3") && modifiers.control() {
                     return Some(Message::ChangeView(CalendarView::Day));
+                }
+
+                // Check for Ctrl+4 (Year View)
+                if matches!(key, Key::Character(ref s) if s == "4") && modifiers.control() {
+                    return Some(Message::ChangeView(CalendarView::Year));
                 }
             }
             None

@@ -8,6 +8,7 @@ use crate::views::CalendarView;
 pub enum MenuAction {
     NewEvent,
     Settings,
+    ViewYear,
     ViewMonth,
     ViewWeek,
     ViewDay,
@@ -22,6 +23,7 @@ impl menu::action::MenuAction for MenuAction {
         match self {
             MenuAction::NewEvent => Message::NewEvent,
             MenuAction::Settings => Message::Settings,
+            MenuAction::ViewYear => Message::ChangeView(CalendarView::Year),
             MenuAction::ViewMonth => Message::ChangeView(CalendarView::Month),
             MenuAction::ViewWeek => Message::ChangeView(CalendarView::Week),
             MenuAction::ViewDay => Message::ChangeView(CalendarView::Day),

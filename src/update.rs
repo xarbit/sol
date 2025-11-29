@@ -1,6 +1,6 @@
 use crate::app::CosmicCalendar;
 use crate::message::Message;
-use crate::models::{WeekState, DayState};
+use crate::models::{WeekState, DayState, YearState};
 use crate::views::CalendarView;
 use cosmic::app::Task;
 
@@ -18,13 +18,16 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         }
         Message::Today => {
             match app.current_view {
+                CalendarView::Year => {
+                    app.year_state = YearState::current();
+                }
                 CalendarView::Week => {
                     app.week_state = WeekState::current_with_first_day(app.locale.first_day_of_week, &app.locale);
                 }
                 CalendarView::Day => {
                     app.day_state = DayState::current(&app.locale);
                 }
-                _ => {
+                CalendarView::Month => {
                     app.navigate_to_today();
                 }
             }
@@ -92,6 +95,9 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
 /// Handle previous period navigation based on current view
 fn handle_previous_period(app: &mut CosmicCalendar) {
     match app.current_view {
+        CalendarView::Year => {
+            app.year_state = app.year_state.previous();
+        }
         CalendarView::Month => app.navigate_to_previous_month(),
         CalendarView::Week => {
             app.week_state = app.week_state.previous(&app.locale);
@@ -105,6 +111,9 @@ fn handle_previous_period(app: &mut CosmicCalendar) {
 /// Handle next period navigation based on current view
 fn handle_next_period(app: &mut CosmicCalendar) {
     match app.current_view {
+        CalendarView::Year => {
+            app.year_state = app.year_state.next();
+        }
         CalendarView::Month => app.navigate_to_next_month(),
         CalendarView::Week => {
             app.week_state = app.week_state.next(&app.locale);

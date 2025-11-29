@@ -10,14 +10,16 @@ menu-edit = Edit
 menu-view = View
 menu-new-event = New Event...
 menu-settings = Settings...
-menu-month-view = Month View
-menu-week-view = Week View
 menu-day-view = Day View
+menu-week-view = Week View
+menu-month-view = Month View
+menu-year-view = Year View
 menu-show-week-numbers = Show Week Numbers
 menu-about = About Sol Calendar
 menu-quit = Quit
 
 # Views
+view-year = Year
 view-month = Month
 view-week = Week
 view-day = Day
