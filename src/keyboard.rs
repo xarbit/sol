@@ -21,6 +21,15 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
         MenuAction::NewEvent,
     );
 
+    // Today: Ctrl+T
+    key_binds.insert(
+        menu::KeyBind {
+            modifiers: vec![menu::key_bind::Modifier::Ctrl],
+            key: Key::Character("t".into()),
+        },
+        MenuAction::Today,
+    );
+
     // Month View: Ctrl+1
     key_binds.insert(
         menu::KeyBind {

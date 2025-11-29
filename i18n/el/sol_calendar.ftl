@@ -10,6 +10,7 @@ menu-edit = Επεξεργασία
 menu-view = Προβολή
 menu-new-event = Νέο συμβάν...
 menu-settings = Ρυθμίσεις...
+menu-today = Σήμερα
 menu-month-view = Προβολή μήνα
 menu-week-view = Προβολή εβδομάδας
 menu-day-view = Προβολή ημέρας

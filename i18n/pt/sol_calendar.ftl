@@ -10,6 +10,7 @@ menu-edit = Editar
 menu-view = Ver
 menu-new-event = Novo evento...
 menu-settings = Definições...
+menu-today = Hoje
 menu-month-view = Vista mensal
 menu-week-view = Vista semanal
 menu-day-view = Vista diária

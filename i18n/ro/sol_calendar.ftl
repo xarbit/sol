@@ -10,6 +10,7 @@ menu-edit = Editare
 menu-view = Vizualizare
 menu-new-event = Eveniment nou...
 menu-settings = Setări...
+menu-today = Astăzi
 menu-month-view = Vizualizare lună
 menu-week-view = Vizualizare săptămână
 menu-day-view = Vizualizare zi

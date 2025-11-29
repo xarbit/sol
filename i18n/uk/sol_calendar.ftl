@@ -10,6 +10,7 @@ menu-edit = Редагувати
 menu-view = Вигляд
 menu-new-event = Нова подія...
 menu-settings = Налаштування...
+menu-today = Сьогодні
 menu-month-view = Місячний вигляд
 menu-week-view = Тижневий вигляд
 menu-day-view = Денний вигляд

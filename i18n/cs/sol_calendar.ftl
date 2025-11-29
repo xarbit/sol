@@ -10,6 +10,7 @@ menu-edit = Upravit
 menu-view = Zobrazit
 menu-new-event = Nová událost...
 menu-settings = Nastavení...
+menu-today = Dnes
 menu-month-view = Zobrazení měsíce
 menu-week-view = Zobrazení týdne
 menu-day-view = Zobrazení dne

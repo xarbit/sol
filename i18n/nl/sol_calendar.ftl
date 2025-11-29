@@ -10,6 +10,7 @@ menu-edit = Bewerken
 menu-view = Weergave
 menu-new-event = Nieuwe afspraak...
 menu-settings = Instellingen...
+menu-today = Vandaag
 menu-month-view = Maandweergave
 menu-week-view = Weekweergave
 menu-day-view = Dagweergave

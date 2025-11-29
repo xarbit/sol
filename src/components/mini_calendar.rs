@@ -8,7 +8,7 @@ use crate::models::CalendarState;
 use crate::ui_constants::{
     SPACING_MEDIUM, SPACING_XXS, SPACING_SMALL, SPACING_MINI_CALENDAR,
     PADDING_TINY, FONT_SIZE_SMALL, FONT_SIZE_BODY, MINI_CALENDAR_DAY_BUTTON_SIZE,
-    ICON_PREVIOUS, ICON_NEXT
+    MINI_CALENDAR_GRID_HEIGHT, ICON_PREVIOUS, ICON_NEXT
 };
 
 pub fn render_mini_calendar(
@@ -74,5 +74,8 @@ pub fn render_mini_calendar(
         grid = grid.push(week_row);
     }
 
-    column().spacing(SPACING_MINI_CALENDAR).push(header).push(grid).into()
+    // Wrap grid in fixed-height container to prevent layout shifts between months
+    let grid_container = container(grid).height(Length::Fixed(MINI_CALENDAR_GRID_HEIGHT));
+
+    column().spacing(SPACING_MINI_CALENDAR).push(header).push(grid_container).into()
 }

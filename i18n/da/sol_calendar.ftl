@@ -10,6 +10,7 @@ menu-edit = Rediger
 menu-view = Vis
 menu-new-event = Ny begivenhed...
 menu-settings = Indstillinger...
+menu-today = I dag
 menu-month-view = Månedsvisning
 menu-week-view = Ugevisning
 menu-day-view = Dagsvisning

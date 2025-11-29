@@ -10,6 +10,7 @@ menu-edit = Muokkaa
 menu-view = Näytä
 menu-new-event = Uusi tapahtuma...
 menu-settings = Asetukset...
+menu-today = Tänään
 menu-month-view = Kuukausinäkymä
 menu-week-view = Viikkonäkymä
 menu-day-view = Päivänäkymä

@@ -27,7 +27,7 @@ pub fn render_main_content<'a>(
         CalendarView::Day => &day_state.month_year_text,
         CalendarView::Month => cache.current_period_text(),
     };
-    let toolbar = components::render_toolbar(period_text, current_view);
+    let toolbar = components::render_toolbar(period_text);
 
     // Render current calendar view
     let calendar_view = match current_view {
