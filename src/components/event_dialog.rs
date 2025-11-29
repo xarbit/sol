@@ -407,6 +407,7 @@ pub fn render_event_dialog<'a>(
 
     let dialog_content = column()
         .spacing(12)
+        .padding([16, 24]) // Add padding to content (top/bottom, left/right) to avoid scrollbar overlap
         .push(text::title4(dialog_title))
         .push(form_content)
         .push(buttons);
@@ -419,7 +420,7 @@ pub fn render_event_dialog<'a>(
     // Dialog container with styling
     container(
         container(scrollable_content)
-            .padding(16)
+            .padding([8, 0]) // Small vertical padding for the container, scrollbar stays outside content
             .width(Length::Fixed(580.0))
             .max_height(700.0)
             .style(|theme: &cosmic::Theme| {
