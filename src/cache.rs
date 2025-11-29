@@ -49,6 +49,17 @@ impl CalendarCache {
             .expect("Current month period text should always be cached")
     }
 
+    /// Get the current month name
+    pub fn current_month_text(&self) -> String {
+        let date = chrono::NaiveDate::from_ymd_opt(self.current.0, self.current.1, 1).unwrap();
+        format!("{}", date.format("%B"))
+    }
+
+    /// Get the current year as text
+    pub fn current_year_text(&self) -> String {
+        self.current.0.to_string()
+    }
+
     /// Ensure a specific month is cached
     fn ensure_cached(&mut self, year: i32, month: u32) {
         let key = (year, month);

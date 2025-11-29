@@ -21,13 +21,14 @@ pub fn render_main_content<'a>(
     show_week_numbers: bool,
 ) -> Element<'a, Message> {
     // Render toolbar - use appropriate text for each view
-    let period_text: &str = match current_view {
-        CalendarView::Year => &year_state.year_text,
-        CalendarView::Week => &week_state.week_range_text,
-        CalendarView::Day => &day_state.month_year_text,
-        CalendarView::Month => cache.current_period_text(),
+    // primary_text is bold (month/period), secondary_text is normal weight (year)
+    let (primary_text, secondary_text): (String, String) = match current_view {
+        CalendarView::Year => (year_state.year_text.clone(), String::new()),
+        CalendarView::Week => (week_state.week_range_text.clone(), String::new()),
+        CalendarView::Day => (day_state.month_year_text.clone(), String::new()),
+        CalendarView::Month => (cache.current_month_text(), cache.current_year_text()),
     };
-    let toolbar = components::render_toolbar(period_text);
+    let toolbar = components::render_toolbar(&primary_text, &secondary_text);
 
     // Render current calendar view
     let calendar_view = match current_view {
