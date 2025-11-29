@@ -56,29 +56,35 @@ pub fn render_mini_calendar(
                 let is_today = calendar_state.is_today(*day);
                 let is_selected = selected_day == Some(*day);
 
-                let day_button = if is_today {
-                    widget::button::suggested((*day).to_string())
-                        .on_press(Message::SelectDay(year, month, *day))
-                        .padding(PADDING_TINY)
+                // Create centered text content for button
+                let day_text = container(widget::text((*day).to_string()).size(FONT_SIZE_SMALL))
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .center_x(Length::Fill)
+                    .center_y(Length::Fill);
+
+                let button_class = if is_today {
+                    cosmic::theme::Button::Suggested
                 } else if is_selected {
-                    widget::button::standard((*day).to_string())
-                        .on_press(Message::SelectDay(year, month, *day))
-                        .padding(PADDING_TINY)
+                    cosmic::theme::Button::Standard
                 } else {
-                    widget::button::text((*day).to_string())
-                        .on_press(Message::SelectDay(year, month, *day))
-                        .padding(PADDING_TINY)
+                    cosmic::theme::Button::Text
                 };
-                day_button.into()
-            } else {
-                widget::text("").into()
-            };
-            // Wrap each cell in a fixed-width container to ensure alignment with headers
-            week_row = week_row.push(
-                container(cell)
+
+                button::custom(day_text)
+                    .on_press(Message::SelectDay(year, month, *day))
                     .width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
-                    .center_x(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
-            );
+                    .height(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
+                    .class(button_class)
+                    .into()
+            } else {
+                // Empty cell placeholder
+                container(widget::text(""))
+                    .width(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
+                    .height(Length::Fixed(MINI_CALENDAR_DAY_BUTTON_SIZE))
+                    .into()
+            };
+            week_row = week_row.push(cell);
         }
         grid = grid.push(week_row);
     }
