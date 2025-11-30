@@ -66,6 +66,16 @@ pub enum Message {
     /// Cancel calendar deletion
     CancelDeleteCalendar,
 
+    // Selection - Drag selection for multi-day events
+    /// Start a drag selection at the given date (mouse press)
+    SelectionStart(NaiveDate),
+    /// Update the selection end point (mouse move while dragging)
+    SelectionUpdate(NaiveDate),
+    /// End the selection (mouse release) - opens event dialog if multi-day
+    SelectionEnd,
+    /// Cancel the current selection
+    SelectionCancel,
+
     // Event management - Quick events
     /// Start creating a quick event on a specific date
     StartQuickEvent(NaiveDate),

@@ -17,6 +17,7 @@ mod menu_action;
 mod message;
 mod models;
 mod protocols;
+mod selection;
 mod services;
 mod settings;
 mod storage;

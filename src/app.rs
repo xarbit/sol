@@ -7,6 +7,7 @@ use crate::locale::LocalePreferences;
 use crate::menu_action::MenuAction;
 use crate::message::Message;
 use crate::models::{CalendarState, WeekState, DayState, YearState};
+use crate::selection::SelectionState;
 use crate::settings::AppSettings;
 use crate::views::{self, CalendarView};
 use chrono::{Datelike, NaiveDate};
@@ -153,6 +154,8 @@ pub struct CosmicCalendar {
     pub selected_calendar_color: String,
     /// Centralized dialog state - only one dialog can be open at a time
     pub active_dialog: ActiveDialog,
+    /// Drag selection state for multi-day event creation
+    pub selection_state: SelectionState,
 
     // Legacy fields - to be removed after full migration
     /// Calendar dialog state (for Create/Edit) - None when dialog is closed
@@ -241,6 +244,7 @@ impl CosmicCalendar {
             cached_month_events,
             selected_calendar_color,
             active_dialog: ActiveDialog::None,
+            selection_state: SelectionState::new(),
             // Legacy fields - kept for backwards compatibility during migration
             calendar_dialog: None,
             delete_calendar_dialog: None,
@@ -355,6 +359,7 @@ impl CosmicCalendar {
         let month_events = views::MonthViewEvents {
             events_by_date: &self.cached_month_events,
             quick_event: quick_event_data,
+            selection: &self.selection_state,
         };
 
         views::render_main_content(

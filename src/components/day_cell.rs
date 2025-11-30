@@ -5,7 +5,10 @@ use cosmic::{widget, Element};
 
 use crate::components::{render_events_column, render_quick_event_input, DisplayEvent};
 use crate::message::Message;
-use crate::styles::{today_circle_style, selected_day_style, day_cell_style, adjacent_month_day_style, adjacent_month_selected_style};
+use crate::styles::{
+    today_circle_style, selected_day_style, day_cell_style, adjacent_month_day_style,
+    adjacent_month_selected_style, selection_highlight_style, adjacent_month_selection_style
+};
 use crate::ui_constants::{PADDING_DAY_CELL, SPACING_TINY, SPACING_SMALL};
 
 /// Size of the circle behind today's day number
@@ -13,10 +16,11 @@ const TODAY_CIRCLE_SIZE: f32 = 32.0;
 
 /// Apply the appropriate style to a day cell container based on state
 /// Today no longer gets special cell styling - the circle is on the day number
-/// Selected gets a border, regular cells get weekend background if applicable
+/// Selected gets a border, drag selection gets highlight, regular cells get weekend background
 fn apply_day_cell_style<'a>(
     content: impl Into<Element<'a, Message>>,
     is_selected: bool,
+    is_in_selection: bool,
     is_weekend: bool,
 ) -> container::Container<'a, Message, cosmic::Theme> {
     let base = container(content)
@@ -26,6 +30,8 @@ fn apply_day_cell_style<'a>(
 
     if is_selected {
         base.style(|theme: &cosmic::Theme| selected_day_style(theme))
+    } else if is_in_selection {
+        base.style(move |theme: &cosmic::Theme| selection_highlight_style(theme, is_weekend))
     } else {
         base.style(move |_theme: &cosmic::Theme| day_cell_style(is_weekend))
     }
@@ -44,6 +50,10 @@ pub struct DayCellConfig {
     pub events: Vec<DisplayEvent>,
     /// If Some, show quick event input with (editing_text, calendar_color)
     pub quick_event: Option<(String, String)>,
+    /// Whether this day is part of the current drag selection range
+    pub is_in_selection: bool,
+    /// Whether a drag selection is currently active
+    pub selection_active: bool,
 }
 
 /// Render a day cell with events and optional quick event input
@@ -105,13 +115,19 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
 
     // Build styled container based on state
     let styled_container = if config.is_adjacent_month {
-        // Adjacent month: grayed out style, but still show selection border if selected
+        // Adjacent month: grayed out style, but show selection/highlight if applicable
         if config.is_selected {
             container(content)
                 .padding(PADDING_DAY_CELL)
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .style(|theme: &cosmic::Theme| adjacent_month_selected_style(theme))
+        } else if config.is_in_selection {
+            container(content)
+                .padding(PADDING_DAY_CELL)
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .style(|theme: &cosmic::Theme| adjacent_month_selection_style(theme))
         } else {
             container(content)
                 .padding(PADDING_DAY_CELL)
@@ -120,29 +136,32 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
                 .style(|_theme: &cosmic::Theme| adjacent_month_day_style())
         }
     } else {
-        // Current month: normal styling (selected gets border)
+        // Current month: normal styling (selected gets border, selection gets highlight)
         apply_day_cell_style(
             content,
             config.is_selected,
+            config.is_in_selection,
             config.is_weekend,
         )
     };
 
     // Handle mouse interactions
     if let Some(date) = date {
-        if config.is_adjacent_month {
-            // Adjacent month days: select without navigating, double-click to create event
-            mouse_area(styled_container)
-                .on_press(Message::SelectDayNoNavigate(date))
-                .on_double_click(Message::StartQuickEvent(date))
-                .into()
-        } else {
-            // Current month days: single click to select (and navigate if needed), double-click to create quick event
-            mouse_area(styled_container)
-                .on_press(Message::SelectDay(config.year, config.month, config.day))
-                .on_double_click(Message::StartQuickEvent(date))
-                .into()
+        // Build mouse area with drag selection support
+        let mut area = mouse_area(styled_container)
+            // Start drag selection on mouse press
+            .on_press(Message::SelectionStart(date))
+            // End drag selection on mouse release
+            .on_release(Message::SelectionEnd)
+            // Double-click opens quick event for single-day creation
+            .on_double_click(Message::StartQuickEvent(date));
+
+        // Only track mouse movement during active selection for performance
+        if config.selection_active {
+            area = area.on_enter(Message::SelectionUpdate(date));
         }
+
+        area.into()
     } else {
         styled_container.into()
     }
@@ -179,8 +198,8 @@ pub fn render_day_cell(
         .width(Length::Fill)
         .align_x(alignment::Horizontal::Right);
 
-    // Apply consistent styling (selected gets border)
-    let styled_container = apply_day_cell_style(content, is_selected, is_weekend);
+    // Apply consistent styling (selected gets border, no selection highlighting for simple cells)
+    let styled_container = apply_day_cell_style(content, is_selected, false, is_weekend);
 
     // Single mouse_area wrapping the styled container
     mouse_area(styled_container)

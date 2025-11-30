@@ -10,6 +10,7 @@ use crate::locale::LocalePreferences;
 use crate::localized_names;
 use crate::message::Message;
 use crate::models::CalendarState;
+use crate::selection::SelectionState;
 use crate::ui_constants::{
     FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, PADDING_SMALL, PADDING_MONTH_GRID,
     SPACING_TINY, WEEK_NUMBER_WIDTH
@@ -28,6 +29,8 @@ pub struct MonthViewEvents<'a> {
     pub events_by_date: &'a std::collections::HashMap<NaiveDate, Vec<DisplayEvent>>,
     /// Quick event editing state: (date, text, calendar_color)
     pub quick_event: Option<(NaiveDate, &'a str, &'a str)>,
+    /// Selection state for drag selection
+    pub selection: &'a SelectionState,
 }
 
 /// Render the weekday header row with responsive names
@@ -152,6 +155,15 @@ pub fn render_month_view<'a>(
                 })
             });
 
+            // Check if this day is in the current drag selection range
+            let (is_in_selection, selection_active) = if let Some(cell_date) = cell_date {
+                events.as_ref().map(|e| {
+                    (e.selection.contains(cell_date), e.selection.is_active)
+                }).unwrap_or((false, false))
+            } else {
+                (false, false)
+            };
+
             let cell = render_day_cell_with_events(DayCellConfig {
                 year,
                 month,
@@ -162,6 +174,8 @@ pub fn render_month_view<'a>(
                 is_adjacent_month: !is_current_month,
                 events: day_events,
                 quick_event: quick_event_data,
+                is_in_selection,
+                selection_active,
             });
 
             week_row = week_row.push(

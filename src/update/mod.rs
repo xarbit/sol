@@ -6,10 +6,12 @@
 //! - `navigation`: View navigation (previous/next period, view changes)
 //! - `calendar`: Calendar management (create, edit, delete, toggle, color)
 //! - `event`: Event management (quick events, create, delete)
+//! - `selection`: Drag selection for multi-day event creation
 
 mod calendar;
 mod event;
 mod navigation;
+mod selection;
 
 use chrono::{NaiveDate, Timelike};
 use cosmic::app::Task;
@@ -32,6 +34,9 @@ use event::{
     handle_open_new_event_dialog, handle_quick_event_text_changed, handle_start_quick_event,
 };
 use navigation::{handle_next_period, handle_previous_period};
+use selection::{
+    handle_selection_cancel, handle_selection_end, handle_selection_start, handle_selection_update,
+};
 
 /// Handle all application messages and update state
 pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Message> {
@@ -227,6 +232,22 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::CancelDeleteCalendar => {
             #[allow(deprecated)]
             { app.delete_calendar_dialog = None; }
+        }
+
+        // === Selection - Drag Selection for Multi-Day Events ===
+        Message::SelectionStart(date) => {
+            // Cancel any empty quick event when starting a selection
+            DialogManager::dismiss_empty_quick_event(&mut app.active_dialog);
+            handle_selection_start(app, date);
+        }
+        Message::SelectionUpdate(date) => {
+            handle_selection_update(app, date);
+        }
+        Message::SelectionEnd => {
+            handle_selection_end(app);
+        }
+        Message::SelectionCancel => {
+            handle_selection_cancel(app);
         }
 
         // === Event Management - Quick Events ===

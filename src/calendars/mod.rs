@@ -211,31 +211,56 @@ impl CalendarManager {
 
             if let Ok(events) = source.fetch_events() {
                 for event in events {
-                    let event_date = event.start.date_naive();
-                    // Include events within the visible date range
-                    if event_date >= range_start && event_date <= range_end {
-                        // Extract start time for timed events
-                        let start_time = if event.all_day {
-                            None
-                        } else {
-                            Some(chrono::NaiveTime::from_hms_opt(
-                                event.start.hour(),
-                                event.start.minute(),
-                                0,
-                            ).unwrap_or_default())
-                        };
+                    let event_start = event.start.date_naive();
+                    let event_end = event.end.date_naive();
 
-                        let display_event = DisplayEvent {
-                            uid: event.uid.clone(),
-                            summary: event.summary.clone(),
-                            color: calendar_color.clone(),
-                            all_day: event.all_day,
-                            start_time,
-                        };
-                        events_by_date
-                            .entry(event_date)
-                            .or_default()
-                            .push(display_event);
+                    // For all-day events, add to each day in the range
+                    // For multi-day events (end > start), show on each day
+                    if event.all_day && event_end > event_start {
+                        // Multi-day event: iterate through each day
+                        let mut current = event_start;
+                        while current <= event_end && current <= range_end {
+                            if current >= range_start {
+                                let display_event = DisplayEvent {
+                                    uid: event.uid.clone(),
+                                    summary: event.summary.clone(),
+                                    color: calendar_color.clone(),
+                                    all_day: true,
+                                    start_time: None,
+                                };
+                                events_by_date
+                                    .entry(current)
+                                    .or_default()
+                                    .push(display_event);
+                            }
+                            current = current.succ_opt().unwrap_or(current);
+                        }
+                    } else {
+                        // Single-day event: only add to start date
+                        if event_start >= range_start && event_start <= range_end {
+                            // Extract start time for timed events
+                            let start_time = if event.all_day {
+                                None
+                            } else {
+                                Some(chrono::NaiveTime::from_hms_opt(
+                                    event.start.hour(),
+                                    event.start.minute(),
+                                    0,
+                                ).unwrap_or_default())
+                            };
+
+                            let display_event = DisplayEvent {
+                                uid: event.uid.clone(),
+                                summary: event.summary.clone(),
+                                color: calendar_color.clone(),
+                                all_day: event.all_day,
+                                start_time,
+                            };
+                            events_by_date
+                                .entry(event_start)
+                                .or_default()
+                                .push(display_event);
+                        }
                     }
                 }
             }

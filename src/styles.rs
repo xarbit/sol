@@ -141,3 +141,40 @@ pub fn color_button_style(color: Color, size: f32, border_width: f32, border_col
         ..Default::default()
     }
 }
+
+/// Style for day cells in a drag selection range
+/// Uses a semi-transparent accent color background
+pub fn selection_highlight_style(theme: &cosmic::Theme, is_weekend: bool) -> container::Style {
+    let accent = theme.cosmic().accent_color();
+    // Light semi-transparent accent background for selection
+    let selection_bg = Color::from_rgba(accent.red, accent.green, accent.blue, 0.2);
+
+    container::Style {
+        background: Some(Background::Color(selection_bg)),
+        border: Border {
+            color: Color::from_rgba(accent.red, accent.green, accent.blue, 0.4),
+            width: BORDER_WIDTH_NORMAL,
+            radius: BORDER_RADIUS.into(),
+        },
+        ..Default::default()
+    }
+}
+
+/// Style for adjacent month day cells in selection range
+pub fn adjacent_month_selection_style(theme: &cosmic::Theme) -> container::Style {
+    let accent = theme.cosmic().accent_color();
+    // Lighter selection for adjacent months
+    let selection_bg = Color::from_rgba(accent.red, accent.green, accent.blue, 0.1);
+
+    container::Style {
+        background: Some(Background::Color(selection_bg)),
+        border: Border {
+            color: Color::from_rgba(accent.red, accent.green, accent.blue, 0.3),
+            width: BORDER_WIDTH_NORMAL,
+            radius: BORDER_RADIUS.into(),
+        },
+        // Gray text for adjacent month days
+        text_color: Some(Color::from_rgba(0.5, 0.5, 0.5, 0.5)),
+        ..Default::default()
+    }
+}
