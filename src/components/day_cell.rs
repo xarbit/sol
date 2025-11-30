@@ -172,10 +172,10 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
                         );
 
                         // All-day events: edge-to-edge, no horizontal padding
+                        // No clip - allow text to overflow for multi-day events
                         if let Some(all_day) = split_events.all_day {
                             let all_day_container = container(all_day)
-                                .width(Length::Fill)
-                                .clip(true);
+                                .width(Length::Fill);
                             content = content.push(all_day_container);
                         }
 

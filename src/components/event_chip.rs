@@ -88,6 +88,9 @@ impl DisplayEvent {
 /// - First: rounded on left, flat on right
 /// - Middle: flat on both sides
 /// - Last: flat on left, rounded on right
+///
+/// For multi-day events, text is rendered via overlay (not in cells) to allow
+/// long names to span across multiple day cells.
 fn render_all_day_chip(
     summary: String,
     color: cosmic::iced::Color,
@@ -111,8 +114,10 @@ fn render_all_day_chip(
         SpanPosition::Last => [2, 4, 2, 0],    // No left padding - continues left
     };
 
-    // Only show text on First or Single position
-    let show_text = matches!(span_position, SpanPosition::First | SpanPosition::Single);
+    // Show text on Single and First segments
+    // First segment doesn't clip, allowing text to overflow into adjacent cells visually
+    let show_text = matches!(span_position, SpanPosition::Single | SpanPosition::First);
+    let should_clip = !matches!(span_position, SpanPosition::First);
 
     let content: Element<'static, Message> = if show_text {
         widget::text(summary)
@@ -120,7 +125,7 @@ fn render_all_day_chip(
             .wrapping(Wrapping::None)
             .into()
     } else {
-        // Empty text for continuation segments - keeps the bar but no text
+        // Middle/Last: just the colored bar, no text
         widget::text("")
             .size(11)
             .into()
@@ -129,7 +134,7 @@ fn render_all_day_chip(
     container(content)
         .padding(padding)
         .width(Length::Fill)
-        .clip(true)
+        .clip(should_clip)
         .style(move |_theme: &cosmic::Theme| {
             container::Style {
                 background: Some(cosmic::iced::Background::Color(color.scale_alpha(0.3))),

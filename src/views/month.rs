@@ -265,14 +265,20 @@ pub fn render_month_view<'a>(
         .map(|e| e.active_dialog.is_quick_event())
         .unwrap_or(false);
 
-    // Build the final view with quick event overlay if needed
+    // Build the final view with overlays
     let base = container(grid)
         .width(Length::Fill)
         .height(Length::Fill);
 
-    // If we have a quick event input, add that overlay on top
+    // Collect overlays to stack
+    let mut layers: Vec<Element<'a, Message>> = vec![base.into()];
+
+    // Multi-day event text is now rendered directly in the event chips (First segment)
+    // with overflow allowed, so no separate overlay needed
+
+    // Add quick event input overlay on top if active
     if has_quick_event_overlay {
-        let quick_overlay = events.as_ref().and_then(|e| {
+        if let Some(quick_overlay) = events.as_ref().and_then(|e| {
             e.active_dialog.quick_event_range().map(|(start, end, text)| {
                 let color = e.quick_event
                     .as_ref()
@@ -288,14 +294,17 @@ pub fn render_month_view<'a>(
                     show_week_numbers,
                 )
             })
-        });
-
-        if let Some(overlay_element) = quick_overlay {
-            return stack![base, overlay_element].into();
+        }) {
+            layers.push(quick_overlay);
         }
     }
 
-    base.into()
+    // Stack all layers
+    if layers.len() == 1 {
+        layers.pop().unwrap()
+    } else {
+        stack(layers).into()
+    }
 }
 
 /// Render the spanning quick event overlay positioned over the selected date range
@@ -413,4 +422,5 @@ fn render_spanning_overlay<'a>(
         .height(Length::Fill)
         .into()
 }
+
 
