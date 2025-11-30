@@ -82,15 +82,11 @@ impl DisplayEvent {
     }
 }
 
-/// Render an all-day event chip with colored background bar
-/// The span_position determines the border radius:
-/// - Single: rounded on all corners
-/// - First: rounded on left, flat on right
-/// - Middle: flat on both sides
-/// - Last: flat on left, rounded on right
+/// Render an all-day event chip with colored background bar.
 ///
-/// For multi-day events, text is rendered via overlay (not in cells) to allow
-/// long names to span across multiple day cells.
+/// Note: Multi-day events are now rendered in an overlay layer (see month.rs).
+/// This function is only called for single-day all-day events, so span_position
+/// will always be Single. The span logic is kept for future use if needed.
 fn render_all_day_chip(
     summary: String,
     color: cosmic::iced::Color,
@@ -114,27 +110,18 @@ fn render_all_day_chip(
         SpanPosition::Last => [2, 4, 2, 0],    // No left padding - continues left
     };
 
-    // Show text on Single and First segments
-    // First segment doesn't clip, allowing text to overflow into adjacent cells visually
-    let show_text = matches!(span_position, SpanPosition::Single | SpanPosition::First);
-    let should_clip = !matches!(span_position, SpanPosition::First);
-
-    let content: Element<'static, Message> = if show_text {
-        widget::text(summary)
-            .size(11)
-            .wrapping(Wrapping::None)
-            .into()
-    } else {
-        // Middle/Last: just the colored bar, no text
-        widget::text("")
-            .size(11)
-            .into()
-    };
+    // Note: Multi-day events are now rendered in the overlay layer.
+    // This function is only called for single-day all-day events (SpanPosition::Single).
+    // The span_position logic is kept for backwards compatibility with render_event_chip.
+    let content: Element<'static, Message> = widget::text(summary)
+        .size(11)
+        .wrapping(Wrapping::None)
+        .into();
 
     container(content)
         .padding(padding)
         .width(Length::Fill)
-        .clip(should_clip)
+        .clip(true)
         .style(move |_theme: &cosmic::Theme| {
             container::Style {
                 background: Some(cosmic::iced::Background::Color(color.scale_alpha(0.3))),
@@ -409,22 +396,16 @@ pub fn render_split_events(
     let total_events = ordered_all_day.iter().filter(|e| e.is_some()).count() + timed_events.len();
     let mut shown = 0;
 
-    // Render all-day events in slot order (with gaps preserved)
+    // All all-day events are rendered in the overlay layer (month.rs)
+    // Render placeholders here to maintain slot alignment for timed events below
     let all_day = if !ordered_all_day.is_empty() {
         let mut col = column().spacing(SPACING_TINY);
-        for slot_event in ordered_all_day {
+        for _slot_event in ordered_all_day {
             if shown >= max_visible {
                 break;
             }
-            match slot_event {
-                Some(event) => {
-                    col = col.push(render_event_chip(event, current_date));
-                }
-                None => {
-                    // Empty placeholder to maintain slot alignment
-                    col = col.push(render_empty_slot_placeholder());
-                }
-            }
+            // Placeholder to maintain vertical spacing
+            col = col.push(render_empty_slot_placeholder());
             shown += 1;
         }
         Some(col.into())

@@ -2,10 +2,12 @@ use std::collections::HashMap;
 
 use chrono::{Datelike, NaiveDate};
 use cosmic::iced::widget::stack;
+use cosmic::iced::widget::text::Wrapping;
 use cosmic::iced::{alignment, Length, Size};
 use cosmic::widget::{column, container, row, responsive};
 use cosmic::{widget, Element};
 
+use crate::components::color_picker::parse_hex_color;
 use crate::components::{render_day_cell_with_events, render_spanning_quick_event_input, DayCellConfig, DisplayEvent};
 use crate::dialogs::ActiveDialog;
 use crate::models::CalendarDay;
@@ -17,7 +19,7 @@ use crate::models::CalendarState;
 use crate::selection::SelectionState;
 use crate::ui_constants::{
     FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, PADDING_SMALL, PADDING_MONTH_GRID,
-    SPACING_TINY, WEEK_NUMBER_WIDTH
+    SPACING_TINY, WEEK_NUMBER_WIDTH, COLOR_DEFAULT_GRAY,
 };
 
 /// Height of the spanning quick event input overlay
@@ -29,6 +31,43 @@ const MIN_CELL_WIDTH_FOR_FULL_NAMES: f32 = 100.0;
 
 /// Fixed height for the weekday header row
 const WEEKDAY_HEADER_HEIGHT: f32 = 32.0;
+
+/// Height of an all-day event chip in the overlay
+const ALLDAY_EVENT_HEIGHT: f32 = 19.0;
+
+/// Spacing between all-day event chips
+const ALLDAY_EVENT_SPACING: f32 = 2.0;
+
+/// Offset from top of cell to where events start (day number area)
+/// This is derived from day_cell: DAY_HEADER_HEIGHT (28) + SPACING_SMALL (4)
+const DAY_CELL_HEADER_OFFSET: f32 = 32.0;
+
+/// Top padding of day cells
+const DAY_CELL_TOP_PADDING: f32 = 4.0;
+
+/// A segment of an all-day event to render in the overlay.
+/// For single-day events, this represents the entire event.
+/// For multi-day events, this represents one week's portion.
+#[derive(Debug, Clone)]
+struct AllDayEventSegment {
+    /// Event UID
+    uid: String,
+    /// Event summary/title
+    summary: String,
+    /// Event color (hex string)
+    color: String,
+    /// Week index (0-based)
+    week_idx: usize,
+    /// Slot index within the week (for vertical stacking)
+    slot: usize,
+    /// Start column (0-6)
+    start_col: usize,
+    /// End column (0-6)
+    end_col: usize,
+    /// Whether this is the first segment (shows text)
+    /// For single-day events, this is always true
+    is_first_segment: bool,
+}
 
 /// Events grouped by day for display in the month view
 pub struct MonthViewEvents<'a> {
@@ -75,15 +114,15 @@ fn render_weekday_header(show_week_numbers: bool, use_short_names: bool) -> Elem
     header_row.into()
 }
 
-/// Compute slot assignments for multi-day all-day events in a week.
+/// Compute slot assignments for ALL all-day events in a week using greedy interval scheduling.
 /// Returns a map of event UID -> slot index.
-/// Events that span multiple days get consistent slots across all days they appear.
-fn compute_week_event_slots(
+/// Both single-day and multi-day events get slots assigned.
+/// Events are assigned to the first available slot where they don't overlap with other events.
+fn compute_week_allday_slots(
     week: &[CalendarDay],
     events_by_date: &HashMap<NaiveDate, Vec<DisplayEvent>>,
 ) -> HashMap<String, usize> {
     let mut slots: HashMap<String, usize> = HashMap::new();
-    let mut next_slot: usize = 0;
 
     // Get dates for this week
     let week_dates: Vec<NaiveDate> = week
@@ -98,40 +137,385 @@ fn compute_week_event_slots(
     let week_start = week_dates[0];
     let week_end = week_dates[week_dates.len() - 1];
 
-    // Collect all multi-day all-day events that appear in this week
-    // We need to find them and sort by their start date
-    let mut multi_day_events: Vec<(NaiveDate, NaiveDate, String)> = Vec::new();
+    // Collect all all-day events that appear in this week
+    // Store: (start_col, end_col, uid) - column range within this week
+    let mut allday_events: Vec<(usize, usize, String)> = Vec::new();
     let mut seen_uids: std::collections::HashSet<String> = std::collections::HashSet::new();
 
-    for date in &week_dates {
+    for (col, date) in week_dates.iter().enumerate() {
         if let Some(day_events) = events_by_date.get(date) {
             for event in day_events {
-                if event.is_multi_day() && !seen_uids.contains(&event.uid) {
-                    if let (Some(start), Some(end)) = (event.span_start, event.span_end) {
-                        // Only include if it overlaps with this week
-                        if start <= week_end && end >= week_start {
-                            seen_uids.insert(event.uid.clone());
-                            multi_day_events.push((start, end, event.uid.clone()));
-                        }
+                if !event.all_day || seen_uids.contains(&event.uid) {
+                    continue;
+                }
+
+                seen_uids.insert(event.uid.clone());
+
+                // Determine column range within this week
+                let (start_col, end_col) = if event.is_multi_day() {
+                    match (event.span_start, event.span_end) {
+                        (Some(s), Some(e)) if s <= week_end && e >= week_start => {
+                            // Calculate column range clipped to this week
+                            let sc = week_dates.iter()
+                                .position(|&d| d >= s)
+                                .unwrap_or(0);
+                            let ec = week_dates.iter()
+                                .rposition(|&d| d <= e)
+                                .unwrap_or(6);
+                            (sc, ec)
+                        },
+                        _ => continue,
                     }
+                } else {
+                    // Single-day event - only spans its own column
+                    (col, col)
+                };
+
+                allday_events.push((start_col, end_col, event.uid.clone()));
+            }
+        }
+    }
+
+    // Sort by start column, then by span length (longer events first for stable ordering)
+    allday_events.sort_by(|a, b| {
+        a.0.cmp(&b.0)
+            .then_with(|| (b.1 - b.0).cmp(&(a.1 - a.0))) // Longer events first
+    });
+
+    // Greedy interval scheduling: assign each event to the first available slot
+    // Track which slots are occupied at each column: slot_occupancy[col] = set of occupied slots
+    let mut slot_occupancy: Vec<std::collections::HashSet<usize>> = vec![std::collections::HashSet::new(); 7];
+
+    for (start_col, end_col, uid) in allday_events {
+        // Find the first slot that is free for all columns this event spans
+        let mut slot = 0;
+        loop {
+            let mut slot_available = true;
+            for col in start_col..=end_col.min(6) {
+                if slot_occupancy[col].contains(&slot) {
+                    slot_available = false;
+                    break;
+                }
+            }
+            if slot_available {
+                break;
+            }
+            slot += 1;
+        }
+
+        // Mark this slot as occupied for all columns the event spans
+        for col in start_col..=end_col.min(6) {
+            slot_occupancy[col].insert(slot);
+        }
+
+        slots.insert(uid, slot);
+    }
+
+    slots
+}
+
+/// Compute slot assignments for ALL all-day events in a week (used by day_cell for placeholders).
+/// Returns a map of event UID -> slot index.
+/// Uses the same greedy interval scheduling as the overlay renderer for consistency.
+fn compute_week_event_slots(
+    week: &[CalendarDay],
+    events_by_date: &HashMap<NaiveDate, Vec<DisplayEvent>>,
+) -> HashMap<String, usize> {
+    // Use the same algorithm as the overlay to ensure consistent slot assignments
+    compute_week_allday_slots(week, events_by_date)
+}
+
+/// Collect all all-day event segments across all weeks for overlay rendering.
+/// Both single-day and multi-day events are handled.
+/// Each segment represents one week's portion of an event (or the whole event for single-day).
+fn collect_allday_event_segments(
+    weeks: &[Vec<CalendarDay>],
+    events_by_date: &HashMap<NaiveDate, Vec<DisplayEvent>>,
+) -> Vec<AllDayEventSegment> {
+    let mut segments: Vec<AllDayEventSegment> = Vec::new();
+    let mut global_seen: HashMap<String, bool> = HashMap::new(); // uid -> has_been_first
+
+    for (week_idx, week) in weeks.iter().enumerate() {
+        // Get week date range
+        let week_dates: Vec<NaiveDate> = week
+            .iter()
+            .filter_map(|d| NaiveDate::from_ymd_opt(d.year, d.month, d.day))
+            .collect();
+
+        if week_dates.is_empty() {
+            continue;
+        }
+
+        let week_start = week_dates[0];
+        let week_end = week_dates[week_dates.len() - 1];
+
+        // Compute slots for this week (all all-day events)
+        let event_slots = compute_week_allday_slots(week, events_by_date);
+
+        // Find all-day events in this week
+        let mut week_seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+        for (col, date) in week_dates.iter().enumerate() {
+            if let Some(day_events) = events_by_date.get(date) {
+                for event in day_events {
+                    // Only process all-day events we haven't seen this week
+                    if !event.all_day || week_seen.contains(&event.uid) {
+                        continue;
+                    }
+
+                    week_seen.insert(event.uid.clone());
+
+                    // Determine start/end columns for this event in this week
+                    let (start_col, end_col) = if event.is_multi_day() {
+                        let (Some(span_start), Some(span_end)) = (event.span_start, event.span_end) else {
+                            continue;
+                        };
+
+                        // Check if event overlaps this week
+                        if span_start > week_end || span_end < week_start {
+                            continue;
+                        }
+
+                        // Calculate column range for this week
+                        let sc = week_dates.iter()
+                            .position(|&d| d >= span_start)
+                            .unwrap_or(0);
+                        let ec = week_dates.iter()
+                            .rposition(|&d| d <= span_end)
+                            .unwrap_or(6);
+                        (sc, ec)
+                    } else {
+                        // Single-day event: only spans its own column
+                        (col, col)
+                    };
+
+                    // Determine if this is the first segment for this event
+                    let is_first_segment = !global_seen.contains_key(&event.uid);
+                    global_seen.insert(event.uid.clone(), true);
+
+                    // Get slot for this event
+                    let slot = event_slots.get(&event.uid).copied().unwrap_or(0);
+
+                    segments.push(AllDayEventSegment {
+                        uid: event.uid.clone(),
+                        summary: event.summary.clone(),
+                        color: event.color.clone(),
+                        week_idx,
+                        slot,
+                        start_col,
+                        end_col,
+                        is_first_segment,
+                    });
                 }
             }
         }
     }
 
-    // Sort by start date, then by end date (longer events first for stable ordering)
-    multi_day_events.sort_by(|a, b| {
-        a.0.cmp(&b.0)
-            .then_with(|| b.1.cmp(&a.1)) // Longer events first (earlier end = shorter)
-    });
+    segments
+}
 
-    // Assign slots in order
-    for (_, _, uid) in multi_day_events {
-        slots.insert(uid, next_slot);
-        next_slot += 1;
+/// Render the all-day events overlay layer.
+/// This renders ALL all-day events (single-day and multi-day) as spanning elements.
+/// Single-day events span only their own column.
+/// Multi-day events span across multiple columns.
+fn render_allday_events_overlay<'a>(
+    weeks: &[Vec<CalendarDay>],
+    events_by_date: &HashMap<NaiveDate, Vec<DisplayEvent>>,
+    show_week_numbers: bool,
+) -> Option<Element<'a, Message>> {
+    let segments = collect_allday_event_segments(weeks, events_by_date);
+
+    if segments.is_empty() {
+        return None;
     }
 
-    slots
+    let num_weeks = weeks.len();
+
+    // Group segments by week
+    let mut segments_by_week: HashMap<usize, Vec<AllDayEventSegment>> = HashMap::new();
+    for segment in segments {
+        segments_by_week
+            .entry(segment.week_idx)
+            .or_default()
+            .push(segment);
+    }
+
+    // Build overlay with same structure as main grid
+    let mut overlay_column = column()
+        .spacing(SPACING_TINY)
+        .padding(PADDING_MONTH_GRID);
+
+    // Header spacer
+    overlay_column = overlay_column.push(
+        container(widget::text(""))
+            .height(Length::Fixed(WEEKDAY_HEADER_HEIGHT))
+    );
+
+    for week_idx in 0..num_weeks {
+        let week_segments = segments_by_week.get(&week_idx);
+
+        if let Some(segs) = week_segments {
+            // Find max slot for this week
+            let max_slot = segs.iter().map(|s| s.slot).max().unwrap_or(0);
+
+            // Build week content: header offset + slot rows
+            let mut week_content = column().spacing(ALLDAY_EVENT_SPACING);
+
+            // Spacer for day header area
+            week_content = week_content.push(
+                container(widget::text(""))
+                    .height(Length::Fixed(DAY_CELL_HEADER_OFFSET + DAY_CELL_TOP_PADDING))
+            );
+
+            // Render each slot as a separate row
+            for slot in 0..=max_slot {
+                // Find segments at this slot
+                let slot_segments: Vec<&AllDayEventSegment> = segs.iter()
+                    .filter(|s| s.slot == slot)
+                    .collect();
+
+                // Build row for this slot
+                let mut slot_row = row().spacing(SPACING_TINY).height(Length::Fixed(ALLDAY_EVENT_HEIGHT));
+
+                // Week number area spacer (if enabled)
+                // Note: This is needed because the slot row needs to align with day cells
+                // but the week number takes space at the start of the week row
+                // We handle this by having the slot rows be children of a container that's
+                // positioned after the week number
+
+                // Sort segments by start_col to process them in order
+                let mut sorted_segs = slot_segments.clone();
+                sorted_segs.sort_by_key(|s| s.start_col);
+
+                let mut current_col = 0;
+
+                for seg in sorted_segs {
+                    // Add spacers for empty columns before this segment
+                    if seg.start_col > current_col {
+                        let gap = seg.start_col - current_col;
+                        for _ in 0..gap {
+                            slot_row = slot_row.push(
+                                container(widget::text(""))
+                                    .width(Length::Fill)
+                            );
+                        }
+                    }
+
+                    // Render the spanning chip
+                    let span_cols = seg.end_col - seg.start_col + 1;
+                    let chip = render_allday_chip(
+                        seg.summary.clone(),
+                        seg.color.clone(),
+                        seg.is_first_segment,
+                        seg.start_col == 0,  // is_event_start (left edge of this segment)
+                        seg.end_col == 6,    // is_event_end (right edge of this segment)
+                    );
+
+                    slot_row = slot_row.push(
+                        container(chip)
+                            .width(Length::FillPortion(span_cols as u16))
+                    );
+
+                    current_col = seg.end_col + 1;
+                }
+
+                // Add spacers for empty columns after the last segment
+                if current_col < 7 {
+                    for _ in current_col..7 {
+                        slot_row = slot_row.push(
+                            container(widget::text(""))
+                                .width(Length::Fill)
+                        );
+                    }
+                }
+
+                week_content = week_content.push(slot_row);
+            }
+
+            // Build the week row with week number spacer
+            let mut week_row = row().spacing(SPACING_TINY).height(Length::Fill);
+
+            if show_week_numbers {
+                week_row = week_row.push(
+                    container(widget::text(""))
+                        .width(Length::Fixed(WEEK_NUMBER_WIDTH))
+                );
+            }
+
+            // The week content takes up the rest of the space
+            week_row = week_row.push(
+                container(week_content)
+                    .width(Length::Fill)
+            );
+
+            overlay_column = overlay_column.push(week_row);
+        } else {
+            // Empty week row
+            overlay_column = overlay_column.push(
+                container(widget::text(""))
+                    .height(Length::Fill)
+            );
+        }
+    }
+
+    Some(
+        container(overlay_column)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
+    )
+}
+
+/// Render a single all-day event chip for the overlay.
+/// Works for both single-day and multi-day events.
+fn render_allday_chip(
+    summary: String,
+    color_hex: String,
+    show_text: bool,
+    is_event_start: bool,
+    is_event_end: bool,
+) -> Element<'static, Message> {
+    let color = parse_hex_color(&color_hex).unwrap_or(COLOR_DEFAULT_GRAY);
+
+    // Border radius based on whether this is start/end of event
+    // Single-day events have both start and end = true (fully rounded)
+    // Multi-day events have appropriate rounding based on position
+    let radius = 4.0;
+    let border_radius: [f32; 4] = match (is_event_start, is_event_end) {
+        (true, true) => [radius, radius, radius, radius],   // Single-day or start+end in same week
+        (true, false) => [radius, 0.0, 0.0, radius],        // Starts here, continues right
+        (false, true) => [0.0, radius, radius, 0.0],        // Continues from left, ends here
+        (false, false) => [0.0, 0.0, 0.0, 0.0],             // Continues through
+    };
+
+    let content: Element<'static, Message> = if show_text {
+        widget::text(summary)
+            .size(11)
+            .wrapping(Wrapping::None)
+            .into()
+    } else {
+        widget::text("")
+            .size(11)
+            .into()
+    };
+
+    container(content)
+        .padding([2, 4, 2, 4])
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .style(move |_theme: &cosmic::Theme| {
+            container::Style {
+                background: Some(cosmic::iced::Background::Color(color.scale_alpha(0.3))),
+                border: cosmic::iced::Border {
+                    color: cosmic::iced::Color::TRANSPARENT,
+                    width: 0.0,
+                    radius: border_radius.into(),
+                },
+                text_color: Some(color),
+                ..Default::default()
+            }
+        })
+        .into()
 }
 
 pub fn render_month_view<'a>(
@@ -273,8 +657,16 @@ pub fn render_month_view<'a>(
     // Collect overlays to stack
     let mut layers: Vec<Element<'a, Message>> = vec![base.into()];
 
-    // Multi-day event text is now rendered directly in the event chips (First segment)
-    // with overflow allowed, so no separate overlay needed
+    // Add all-day events overlay (renders all all-day events as spanning bars)
+    if let Some(ref e) = events {
+        if let Some(allday_overlay) = render_allday_events_overlay(
+            &calendar_state.weeks_full,
+            e.events_by_date,
+            show_week_numbers,
+        ) {
+            layers.push(allday_overlay);
+        }
+    }
 
     // Add quick event input overlay on top if active
     if has_quick_event_overlay {
