@@ -14,6 +14,7 @@ use cosmic::iced::keyboard;
 use cosmic::widget::{about, calendar::CalendarModel, menu, text_editor};
 use cosmic::widget::menu::Action as _; // Import trait for .message() method
 use cosmic::{Application, Element};
+use log::{debug, info};
 use std::collections::HashMap;
 
 const APP_ID: &str = "io.github.xarbit.SolCalendar";
@@ -379,7 +380,10 @@ impl Application for CosmicCalendar {
     }
 
     fn init(core: Core, _flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
-        (Self::initialize_app(core), cosmic::app::Task::none())
+        info!("CosmicCalendar: Initializing application");
+        let app = Self::initialize_app(core);
+        info!("CosmicCalendar: Application initialized with view {:?}", app.current_view);
+        (app, cosmic::app::Task::none())
     }
 
     fn header_start(&self) -> Vec<Element<'_, Self::Message>> {

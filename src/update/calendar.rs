@@ -1,51 +1,50 @@
 //! Calendar management handlers (create, edit, delete, toggle, color)
 
 use crate::app::{CalendarDialogMode, CalendarDialogState, CosmicCalendar, DeleteCalendarDialogState};
-use crate::components::color_picker::CALENDAR_COLORS;
+use crate::services::{CalendarHandler, NewCalendarData, UpdateCalendarData};
+use log::{debug, error, info, warn};
 
 /// Toggle a calendar's enabled state and save configuration
 pub fn handle_toggle_calendar(app: &mut CosmicCalendar, id: String) {
-    if let Some(calendar) = app
-        .calendar_manager
-        .sources_mut()
-        .iter_mut()
-        .find(|c| c.info().id == id)
-    {
-        calendar.set_enabled(!calendar.is_enabled());
+    debug!("handle_toggle_calendar: Toggling calendar '{}'", id);
+
+    match CalendarHandler::toggle_enabled(&mut app.calendar_manager, &id) {
+        Ok(new_state) => {
+            info!("Calendar '{}' toggled to enabled={}", id, new_state);
+            // Refresh events to show/hide events from toggled calendar
+            app.refresh_cached_events();
+        }
+        Err(e) => {
+            error!("Failed to toggle calendar '{}': {}", id, e);
+        }
     }
-    // Save configuration after toggle
-    app.calendar_manager.save_config().ok();
-    // Refresh events to show/hide events from toggled calendar
-    app.refresh_cached_events();
 }
 
 /// Change a calendar's color and save configuration
 pub fn handle_change_calendar_color(app: &mut CosmicCalendar, id: String, color: String) {
-    if let Some(calendar) = app
-        .calendar_manager
-        .sources_mut()
-        .iter_mut()
-        .find(|c| c.info().id == id)
-    {
-        calendar.info_mut().color = color;
+    debug!("handle_change_calendar_color: Changing color for '{}' to '{}'", id, color);
+
+    match CalendarHandler::change_color(&mut app.calendar_manager, &id, color.clone()) {
+        Ok(()) => {
+            info!("Calendar '{}' color changed to '{}'", id, color);
+            // Close the color picker after selection
+            app.color_picker_open = None;
+            // Refresh events to update event colors in views
+            app.refresh_cached_events();
+            // Also update selected calendar color if this was the selected calendar
+            app.update_selected_calendar_color();
+        }
+        Err(e) => {
+            error!("Failed to change calendar color: {}", e);
+        }
     }
-    // Save configuration after color change
-    app.calendar_manager.save_config().ok();
-    // Close the color picker after selection
-    app.color_picker_open = None;
-    // Refresh events to update event colors in views
-    app.refresh_cached_events();
-    // Also update selected calendar color if this was the selected calendar
-    app.update_selected_calendar_color();
 }
 
 /// Open the calendar dialog in Create mode
 pub fn handle_open_calendar_dialog_create(app: &mut CosmicCalendar) {
-    // Default to the first color in the palette
-    let default_color = CALENDAR_COLORS
-        .first()
-        .map(|(hex, _)| hex.to_string())
-        .unwrap_or_else(|| "#3B82F6".to_string());
+    debug!("handle_open_calendar_dialog_create: Opening create dialog");
+
+    let default_color = CalendarHandler::default_color();
 
     app.calendar_dialog = Some(CalendarDialogState {
         mode: CalendarDialogMode::Create,
@@ -56,24 +55,22 @@ pub fn handle_open_calendar_dialog_create(app: &mut CosmicCalendar) {
 
 /// Open the calendar dialog in Edit mode for a specific calendar
 pub fn handle_open_calendar_dialog_edit(app: &mut CosmicCalendar, calendar_id: String) {
-    // Find the calendar to get its current values
-    let Some(calendar) = app
-        .calendar_manager
-        .sources()
-        .iter()
-        .find(|c| c.info().id == calendar_id)
-    else {
-        return;
-    };
+    debug!("handle_open_calendar_dialog_edit: Opening edit dialog for '{}'", calendar_id);
 
-    let info = calendar.info();
-    app.calendar_dialog = Some(CalendarDialogState {
-        mode: CalendarDialogMode::Edit {
-            calendar_id: info.id.clone(),
-        },
-        name: info.name.clone(),
-        color: info.color.clone(),
-    });
+    match CalendarHandler::get_info(&app.calendar_manager, &calendar_id) {
+        Ok((name, color, _enabled)) => {
+            app.calendar_dialog = Some(CalendarDialogState {
+                mode: CalendarDialogMode::Edit {
+                    calendar_id: calendar_id.clone(),
+                },
+                name,
+                color,
+            });
+        }
+        Err(e) => {
+            warn!("Cannot edit calendar '{}': {}", calendar_id, e);
+        }
+    }
 }
 
 /// Confirm the calendar dialog (Create or Edit)
@@ -84,61 +81,55 @@ pub fn handle_confirm_calendar_dialog(app: &mut CosmicCalendar) {
 
     let name = dialog.name.trim();
     if name.is_empty() {
-        // Don't allow empty name
+        warn!("handle_confirm_calendar_dialog: Empty name, ignoring");
         return;
     }
 
     match dialog.mode {
         CalendarDialogMode::Create => {
-            // Generate a unique ID based on the name
-            let id = name
-                .to_lowercase()
-                .chars()
-                .filter(|c| c.is_alphanumeric() || *c == ' ')
-                .map(|c| if c == ' ' { '-' } else { c })
-                .collect::<String>();
+            debug!("handle_confirm_calendar_dialog: Creating calendar '{}'", name);
 
-            // Make sure ID is unique by appending a number if needed
-            let mut unique_id = id.clone();
-            let mut counter = 1;
-            while app
-                .calendar_manager
-                .sources()
-                .iter()
-                .any(|c| c.info().id == unique_id)
-            {
-                unique_id = format!("{}-{}", id, counter);
-                counter += 1;
+            match CalendarHandler::create(
+                &mut app.calendar_manager,
+                NewCalendarData {
+                    name: name.to_string(),
+                    color: dialog.color,
+                },
+            ) {
+                Ok(id) => {
+                    info!("Calendar '{}' created with id '{}'", name, id);
+                    // Select the new calendar
+                    app.selected_calendar_id = Some(id);
+                    app.update_selected_calendar_color();
+                }
+                Err(e) => {
+                    error!("Failed to create calendar: {}", e);
+                }
             }
-
-            // Add the calendar
-            app.calendar_manager.add_local_calendar(
-                unique_id.clone(),
-                name.to_string(),
-                dialog.color,
-            );
-
-            // Select the new calendar
-            app.selected_calendar_id = Some(unique_id);
-            app.update_selected_calendar_color();
         }
         CalendarDialogMode::Edit { calendar_id } => {
-            // Update the existing calendar
-            if let Some(calendar) = app
-                .calendar_manager
-                .sources_mut()
-                .iter_mut()
-                .find(|c| c.info().id == calendar_id)
-            {
-                calendar.info_mut().name = name.to_string();
-                calendar.info_mut().color = dialog.color;
+            debug!("handle_confirm_calendar_dialog: Updating calendar '{}'", calendar_id);
+
+            match CalendarHandler::update(
+                &mut app.calendar_manager,
+                &calendar_id,
+                UpdateCalendarData {
+                    name: Some(name.to_string()),
+                    color: Some(dialog.color),
+                    enabled: None,
+                },
+            ) {
+                Ok(()) => {
+                    info!("Calendar '{}' updated", calendar_id);
+                    // Refresh events to update colors
+                    app.refresh_cached_events();
+                    // Update selected calendar color if this was the selected calendar
+                    app.update_selected_calendar_color();
+                }
+                Err(e) => {
+                    error!("Failed to update calendar '{}': {}", calendar_id, e);
+                }
             }
-            // Save configuration
-            app.calendar_manager.save_config().ok();
-            // Refresh events to update colors
-            app.refresh_cached_events();
-            // Update selected calendar color if this was the selected calendar
-            app.update_selected_calendar_color();
         }
     }
 }
@@ -146,6 +137,7 @@ pub fn handle_confirm_calendar_dialog(app: &mut CosmicCalendar) {
 /// Open the delete calendar confirmation dialog for the selected calendar
 pub fn handle_delete_selected_calendar(app: &mut CosmicCalendar) {
     let Some(ref calendar_id) = app.selected_calendar_id else {
+        debug!("handle_delete_selected_calendar: No calendar selected");
         return;
     };
     handle_request_delete_calendar(app, calendar_id.clone());
@@ -153,14 +145,13 @@ pub fn handle_delete_selected_calendar(app: &mut CosmicCalendar) {
 
 /// Open the delete calendar confirmation dialog for a specific calendar
 pub fn handle_request_delete_calendar(app: &mut CosmicCalendar, calendar_id: String) {
-    // Find the calendar to get its name
-    let calendar_name = app
-        .calendar_manager
-        .sources()
-        .iter()
-        .find(|c| c.info().id == calendar_id)
-        .map(|c| c.info().name.clone())
-        .unwrap_or_else(|| calendar_id.clone());
+    debug!("handle_request_delete_calendar: Requesting delete for '{}'", calendar_id);
+
+    // Get calendar info using the handler
+    let calendar_name = match CalendarHandler::get_info(&app.calendar_manager, &calendar_id) {
+        Ok((name, _, _)) => name,
+        Err(_) => calendar_id.clone(),
+    };
 
     app.delete_calendar_dialog = Some(DeleteCalendarDialogState {
         calendar_id,
@@ -174,19 +165,23 @@ pub fn handle_confirm_delete_calendar(app: &mut CosmicCalendar) {
         return;
     };
 
-    // Delete the calendar
-    app.calendar_manager.delete_calendar(&dialog.calendar_id);
+    debug!("handle_confirm_delete_calendar: Deleting '{}'", dialog.calendar_id);
 
-    // If we deleted the selected calendar, select another one
-    if app.selected_calendar_id.as_ref() == Some(&dialog.calendar_id) {
-        app.selected_calendar_id = app
-            .calendar_manager
-            .sources()
-            .first()
-            .map(|c| c.info().id.clone());
-        app.update_selected_calendar_color();
+    match CalendarHandler::delete(&mut app.calendar_manager, &dialog.calendar_id) {
+        Ok(()) => {
+            info!("Calendar '{}' deleted", dialog.calendar_id);
+
+            // If we deleted the selected calendar, select another one
+            if app.selected_calendar_id.as_ref() == Some(&dialog.calendar_id) {
+                app.selected_calendar_id = CalendarHandler::get_first_calendar_id(&app.calendar_manager);
+                app.update_selected_calendar_color();
+            }
+
+            // Refresh events in case any events from the deleted calendar were displayed
+            app.refresh_cached_events();
+        }
+        Err(e) => {
+            error!("Failed to delete calendar '{}': {}", dialog.calendar_id, e);
+        }
     }
-
-    // Refresh events in case any events from the deleted calendar were displayed
-    app.refresh_cached_events();
 }

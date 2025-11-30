@@ -30,6 +30,7 @@
 
 use crate::caldav::CalendarEvent;
 use crate::calendars::CalendarManager;
+use log::{debug, error, info, trace, warn};
 use std::error::Error;
 
 /// Result type for event handler operations
@@ -74,8 +75,11 @@ impl EventHandler {
     /// Validate an event before saving.
     /// Returns Ok(()) if valid, or an error describing what's wrong.
     pub fn validate_event(event: &CalendarEvent) -> EventResult<()> {
+        trace!("EventHandler: Validating event uid={}", event.uid);
+
         // Title/summary is required
         if event.summary.trim().is_empty() {
+            warn!("EventHandler: Validation failed - empty title for uid={}", event.uid);
             return Err(EventError::ValidationError(
                 "Event title is required".to_string(),
             ));
@@ -83,6 +87,7 @@ impl EventHandler {
 
         // End time must be after start time
         if event.end < event.start {
+            warn!("EventHandler: Validation failed - end before start for uid={}", event.uid);
             return Err(EventError::ValidationError(
                 "End time must be after start time".to_string(),
             ));
@@ -90,11 +95,13 @@ impl EventHandler {
 
         // UID must not be empty
         if event.uid.is_empty() {
+            warn!("EventHandler: Validation failed - empty UID");
             return Err(EventError::ValidationError(
                 "Event UID is required".to_string(),
             ));
         }
 
+        debug!("EventHandler: Event validation passed for uid={}", event.uid);
         Ok(())
     }
 
@@ -110,6 +117,9 @@ impl EventHandler {
         calendar_id: &str,
         event: CalendarEvent,
     ) -> EventResult<()> {
+        info!("EventHandler: Adding event '{}' (uid={}) to calendar '{}'",
+              event.summary, event.uid, calendar_id);
+
         // Validate event
         Self::validate_event(&event)?;
 
@@ -118,18 +128,31 @@ impl EventHandler {
             .sources_mut()
             .iter_mut()
             .find(|c| c.info().id == calendar_id)
-            .ok_or_else(|| EventError::CalendarNotFound(calendar_id.to_string()))?;
+            .ok_or_else(|| {
+                error!("EventHandler: Calendar '{}' not found", calendar_id);
+                EventError::CalendarNotFound(calendar_id.to_string())
+            })?;
+
+        debug!("EventHandler: Found calendar '{}', adding event", calendar.info().name);
 
         // Add event via calendar (which routes to protocol)
         calendar
-            .add_event(event)
-            .map_err(|e| EventError::StorageError(e.to_string()))?;
+            .add_event(event.clone())
+            .map_err(|e| {
+                error!("EventHandler: Failed to add event: {}", e);
+                EventError::StorageError(e.to_string())
+            })?;
 
         // Sync to persist
+        debug!("EventHandler: Syncing calendar after add");
         calendar
             .sync()
-            .map_err(|e| EventError::SyncError(e.to_string()))?;
+            .map_err(|e| {
+                error!("EventHandler: Sync failed after add: {}", e);
+                EventError::SyncError(e.to_string())
+            })?;
 
+        info!("EventHandler: Successfully added event uid={}", event.uid);
         Ok(())
     }
 
@@ -145,12 +168,16 @@ impl EventHandler {
         calendar_id: &str,
         event: CalendarEvent,
     ) -> EventResult<()> {
+        info!("EventHandler: Updating event '{}' (uid={}) in calendar '{}'",
+              event.summary, event.uid, calendar_id);
+
         // Validate event
         Self::validate_event(&event)?;
 
         let uid = event.uid.clone();
 
         // First, delete the old event from wherever it exists
+        debug!("EventHandler: Deleting old version of event uid={}", uid);
         Self::delete_event(calendar_manager, &uid)?;
 
         // Add to the (possibly new) target calendar
@@ -158,16 +185,27 @@ impl EventHandler {
             .sources_mut()
             .iter_mut()
             .find(|c| c.info().id == calendar_id)
-            .ok_or_else(|| EventError::CalendarNotFound(calendar_id.to_string()))?;
+            .ok_or_else(|| {
+                error!("EventHandler: Target calendar '{}' not found for update", calendar_id);
+                EventError::CalendarNotFound(calendar_id.to_string())
+            })?;
 
+        debug!("EventHandler: Adding updated event to calendar '{}'", calendar.info().name);
         calendar
-            .add_event(event)
-            .map_err(|e| EventError::StorageError(e.to_string()))?;
+            .add_event(event.clone())
+            .map_err(|e| {
+                error!("EventHandler: Failed to add updated event: {}", e);
+                EventError::StorageError(e.to_string())
+            })?;
 
         calendar
             .sync()
-            .map_err(|e| EventError::SyncError(e.to_string()))?;
+            .map_err(|e| {
+                error!("EventHandler: Sync failed after update: {}", e);
+                EventError::SyncError(e.to_string())
+            })?;
 
+        info!("EventHandler: Successfully updated event uid={}", uid);
         Ok(())
     }
 
@@ -178,23 +216,31 @@ impl EventHandler {
         calendar_manager: &mut CalendarManager,
         uid: &str,
     ) -> EventResult<()> {
+        info!("EventHandler: Deleting event uid={}", uid);
         let mut deleted = false;
 
         for calendar in calendar_manager.sources_mut().iter_mut() {
             match calendar.delete_event(uid) {
                 Ok(()) => {
+                    info!("EventHandler: Deleted event uid={} from calendar '{}'",
+                          uid, calendar.info().name);
                     // Sync after successful deletion
-                    let _ = calendar.sync();
+                    if let Err(e) = calendar.sync() {
+                        warn!("EventHandler: Sync failed after delete: {}", e);
+                    }
                     deleted = true;
                     break;
                 }
-                Err(_) => continue, // Event not in this calendar, try next
+                Err(_) => {
+                    trace!("EventHandler: Event uid={} not in calendar '{}'",
+                           uid, calendar.info().name);
+                    continue;
+                }
             }
         }
 
         if !deleted {
-            // Not necessarily an error - event might have already been deleted
-            // Just log it and continue
+            debug!("EventHandler: Event uid={} not found in any calendar (may already be deleted)", uid);
         }
 
         Ok(())
@@ -207,26 +253,41 @@ impl EventHandler {
         calendar_manager: &CalendarManager,
         uid: &str,
     ) -> EventResult<(CalendarEvent, String)> {
+        debug!("EventHandler: Searching for event uid={}", uid);
+
         for calendar in calendar_manager.sources() {
             if let Ok(events) = calendar.fetch_events() {
                 if let Some(event) = events.iter().find(|e| e.uid == uid) {
+                    debug!("EventHandler: Found event uid={} in calendar '{}'",
+                           uid, calendar.info().name);
                     return Ok((event.clone(), calendar.info().id.clone()));
                 }
             }
         }
 
+        debug!("EventHandler: Event uid={} not found in any calendar", uid);
         Err(EventError::EventNotFound(uid.to_string()))
     }
 
     /// Sync all calendars.
     pub fn sync_all(calendar_manager: &mut CalendarManager) -> EventResult<()> {
+        info!("EventHandler: Syncing all calendars");
+        let mut sync_count = 0;
+
         for calendar in calendar_manager.sources_mut().iter_mut() {
             if calendar.is_enabled() {
+                debug!("EventHandler: Syncing calendar '{}'", calendar.info().name);
                 calendar
                     .sync()
-                    .map_err(|e| EventError::SyncError(e.to_string()))?;
+                    .map_err(|e| {
+                        error!("EventHandler: Sync failed for '{}': {}", calendar.info().name, e);
+                        EventError::SyncError(e.to_string())
+                    })?;
+                sync_count += 1;
             }
         }
+
+        info!("EventHandler: Synced {} calendars", sync_count);
         Ok(())
     }
 }

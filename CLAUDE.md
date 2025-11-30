@@ -64,6 +64,18 @@ UI → Update Handlers → EventHandler (middleware) → Protocols
 - `protocols/local.rs` - Local SQLite storage protocol
 - `protocols/caldav.rs` - CalDAV HTTP protocol
 
+### Logging (`logging.rs`)
+Centralized logging configuration for the application. Use `log` macros throughout the codebase:
+```rust
+use log::{debug, info, warn, error, trace};
+info!("Operation completed");
+debug!("Processing uid={}", uid);
+```
+
+Control log level via `RUST_LOG` environment variable:
+- `RUST_LOG=debug cargo run` - Enable debug logs
+- `RUST_LOG=sol_calendar::services=debug` - Debug for services only
+
 ### Services Layer (`services/`)
 Service handlers centralize business logic and act as middleware between the UI/update layer and the protocol/storage layer.
 

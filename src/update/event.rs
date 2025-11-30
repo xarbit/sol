@@ -5,6 +5,7 @@
 
 use chrono::{NaiveDate, NaiveTime, TimeZone, Utc};
 use cosmic::widget::{calendar::CalendarModel, text_editor};
+use log::{debug, error, info, warn};
 use uuid::Uuid;
 
 use crate::app::{CosmicCalendar, EventDialogState};
@@ -13,22 +14,28 @@ use crate::services::EventHandler;
 
 /// Commit the quick event being edited - create a new event in the selected calendar
 pub fn handle_commit_quick_event(app: &mut CosmicCalendar) {
+    debug!("handle_commit_quick_event: Starting");
+
     // Get the event data and clear the editing state
     let Some((date, text)) = app.quick_event_editing.take() else {
+        debug!("handle_commit_quick_event: No quick event editing state");
         return;
     };
 
     // Don't create empty events
     let text = text.trim();
     if text.is_empty() {
+        debug!("handle_commit_quick_event: Empty text, ignoring");
         return;
     }
 
     // Get the selected calendar ID
     let Some(calendar_id) = app.selected_calendar_id.clone() else {
-        eprintln!("No calendar selected for new event");
+        warn!("handle_commit_quick_event: No calendar selected for new event");
         return;
     };
+
+    info!("handle_commit_quick_event: Creating event '{}' on {} in calendar '{}'", text, date, calendar_id);
 
     // Create an all-day event for the selected date
     // Use midnight UTC for start, end of day for end
@@ -57,19 +64,22 @@ pub fn handle_commit_quick_event(app: &mut CosmicCalendar) {
 
     // Use EventHandler to add the event (handles validation, storage, and sync)
     if let Err(e) = EventHandler::add_event(&mut app.calendar_manager, &calendar_id, event) {
-        eprintln!("Failed to add event: {}", e);
+        error!("handle_commit_quick_event: Failed to add event: {}", e);
         return;
     }
 
+    info!("handle_commit_quick_event: Event created successfully");
     // Refresh the cached events to show the new event
     app.refresh_cached_events();
 }
 
 /// Delete an event by its UID from all calendars
 pub fn handle_delete_event(app: &mut CosmicCalendar, uid: String) {
+    info!("handle_delete_event: Deleting event uid={}", uid);
+
     // Use EventHandler to delete the event (searches all calendars)
     if let Err(e) = EventHandler::delete_event(&mut app.calendar_manager, &uid) {
-        eprintln!("Failed to delete event: {}", e);
+        error!("handle_delete_event: Failed to delete event: {}", e);
     }
     // Refresh cached events to reflect deletion
     app.refresh_cached_events();
@@ -77,6 +87,7 @@ pub fn handle_delete_event(app: &mut CosmicCalendar, uid: String) {
 
 /// Start editing a quick event on a specific date
 pub fn handle_start_quick_event(app: &mut CosmicCalendar, date: NaiveDate) {
+    debug!("handle_start_quick_event: Starting quick event for {}", date);
     app.quick_event_editing = Some((date, String::new()));
 }
 
@@ -89,6 +100,7 @@ pub fn handle_quick_event_text_changed(app: &mut CosmicCalendar, text: String) {
 
 /// Cancel quick event editing
 pub fn handle_cancel_quick_event(app: &mut CosmicCalendar) {
+    debug!("handle_cancel_quick_event: Cancelling");
     app.quick_event_editing = None;
 }
 
@@ -96,6 +108,7 @@ pub fn handle_cancel_quick_event(app: &mut CosmicCalendar) {
 
 /// Open the event dialog for creating a new event
 pub fn handle_open_new_event_dialog(app: &mut CosmicCalendar) {
+    debug!("handle_open_new_event_dialog: Opening new event dialog");
     let today = app.selected_date;
 
     // Default to 9:00 AM - 10:00 AM
@@ -153,14 +166,18 @@ pub fn handle_open_new_event_dialog(app: &mut CosmicCalendar) {
 
 /// Open the event dialog for editing an existing event
 pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, uid: String) {
+    debug!("handle_open_edit_event_dialog: Opening edit dialog for uid={}", uid);
+
     // Use EventHandler to find the event across all calendars
     let (event, calendar_id) = match EventHandler::find_event(&app.calendar_manager, &uid) {
         Ok(result) => result,
         Err(e) => {
-            eprintln!("Event not found: {}", e);
+            warn!("handle_open_edit_event_dialog: Event not found: {}", e);
             return;
         }
     };
+
+    info!("handle_open_edit_event_dialog: Found event '{}' in calendar '{}'", event.summary, calendar_id);
 
     // Convert UTC times to local dates/times
     let start_date = event.start.date_naive();
@@ -214,9 +231,13 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) {
         return;
     };
 
+    let is_edit = dialog.editing_uid.is_some();
+    debug!("handle_confirm_event_dialog: {} event", if is_edit { "Updating" } else { "Creating" });
+
     // Validate: title is required
     let title = dialog.title.trim();
     if title.is_empty() {
+        warn!("handle_confirm_event_dialog: Empty title, returning dialog");
         // Put dialog back - can't save without title
         app.event_dialog = Some(dialog);
         return;
@@ -272,23 +293,29 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) {
 
     // Use EventHandler for create or update
     let result = if dialog.editing_uid.is_some() {
+        info!("handle_confirm_event_dialog: Updating event '{}' in calendar '{}'", title, dialog.calendar_id);
         // Update existing event (EventHandler handles delete + add)
         EventHandler::update_event(&mut app.calendar_manager, &dialog.calendar_id, event)
     } else {
+        info!("handle_confirm_event_dialog: Creating event '{}' in calendar '{}'", title, dialog.calendar_id);
         // Create new event
         EventHandler::add_event(&mut app.calendar_manager, &dialog.calendar_id, event)
     };
 
-    if let Err(e) = result {
-        eprintln!("Failed to save event: {}", e);
-        return;
+    match result {
+        Ok(()) => {
+            info!("handle_confirm_event_dialog: Event saved successfully");
+            // Refresh cached events
+            app.refresh_cached_events();
+        }
+        Err(e) => {
+            error!("handle_confirm_event_dialog: Failed to save event: {}", e);
+        }
     }
-
-    // Refresh cached events
-    app.refresh_cached_events();
 }
 
 /// Cancel the event dialog
 pub fn handle_cancel_event_dialog(app: &mut CosmicCalendar) {
+    debug!("handle_cancel_event_dialog: Cancelling event dialog");
     app.event_dialog = None;
 }

@@ -11,6 +11,7 @@ use crate::caldav::CalendarEvent;
 use crate::components::DisplayEvent;
 use crate::database::Database;
 use chrono::{Datelike, Timelike};
+use log::{debug, error, info, warn};
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::{Arc, Mutex};
@@ -26,6 +27,8 @@ pub struct CalendarManager {
 impl CalendarManager {
     /// Create a new CalendarManager with a database connection
     pub fn new() -> Self {
+        info!("CalendarManager: Initializing");
+
         // Open or create the database
         let db = Database::open().expect("Failed to open database");
         let db = Arc::new(Mutex::new(db));
@@ -39,6 +42,7 @@ impl CalendarManager {
     /// Create a new CalendarManager, loading calendars from config
     /// If no calendars exist, creates default ones
     pub fn with_defaults() -> Self {
+        info!("CalendarManager: Loading with defaults");
         let mut manager = Self::new();
         let db = manager.db.clone();
 
@@ -46,6 +50,7 @@ impl CalendarManager {
         let config = CalendarManagerConfig::load().unwrap_or_default();
 
         if config.calendars.is_empty() {
+            info!("CalendarManager: No saved calendars, creating defaults");
             // No saved calendars, create defaults
             manager.add_source(Box::new(LocalCalendar::with_color(
                 "personal".to_string(),
@@ -64,8 +69,10 @@ impl CalendarManager {
             // Save the defaults
             manager.save_config().ok();
         } else {
+            info!("CalendarManager: Loading {} calendars from config", config.calendars.len());
             // Load calendars from config
             for cal_config in &config.calendars {
+                debug!("CalendarManager: Loading calendar '{}' ({})", cal_config.name, cal_config.id);
                 let mut calendar = LocalCalendar::new(
                     cal_config.id.clone(),
                     cal_config.name.clone(),
@@ -78,6 +85,7 @@ impl CalendarManager {
             }
         }
 
+        info!("CalendarManager: Initialized with {} calendars", manager.sources.len());
         manager
     }
 

@@ -13,9 +13,11 @@ mod navigation;
 
 use chrono::{NaiveDate, Timelike};
 use cosmic::app::Task;
+use log::{debug, info, warn};
 
 use crate::app::CosmicCalendar;
 use crate::message::Message;
+use crate::services::SettingsHandler;
 
 // Re-export handlers for use in this module
 use calendar::{
@@ -81,9 +83,10 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             app.show_search = !app.show_search;
         }
         Message::ToggleWeekNumbers => {
-            app.settings.show_week_numbers = !app.settings.show_week_numbers;
-            // Save settings to persist the change
-            app.settings.save().ok();
+            debug!("Message::ToggleWeekNumbers");
+            if let Err(e) = SettingsHandler::toggle_week_numbers(&mut app.settings) {
+                log::error!("Failed to toggle week numbers: {}", e);
+            }
         }
 
         // === Calendar Management ===
@@ -437,15 +440,15 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         }
         Message::ImportICal => {
             // TODO: Open file picker for iCal import
-            println!("Import iCal requested");
+            info!("Message::ImportICal: Import iCal requested (not yet implemented)");
         }
         Message::ExportICal => {
             // TODO: Open file picker for iCal export
-            println!("Export iCal requested");
+            info!("Message::ExportICal: Export iCal requested (not yet implemented)");
         }
         Message::Settings => {
             // TODO: Open settings dialog
-            println!("Settings requested");
+            info!("Message::Settings: Settings requested (not yet implemented)");
         }
         Message::About => {
             app.core.window.show_context = !app.core.window.show_context;

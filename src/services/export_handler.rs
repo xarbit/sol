@@ -6,6 +6,7 @@
 use crate::caldav::CalendarEvent;
 use crate::calendars::CalendarManager;
 use icalendar::{Calendar, Component, Event, EventLike};
+use log::{debug, error, info, warn};
 use std::error::Error;
 use std::fs;
 use std::path::Path;
@@ -45,6 +46,8 @@ pub struct ExportHandler;
 impl ExportHandler {
     /// Export a single event to iCalendar format
     pub fn event_to_ical(event: &CalendarEvent) -> Calendar {
+        debug!("ExportHandler: Converting event '{}' (uid={}) to iCal", event.summary, event.uid);
+
         let mut calendar = Calendar::new();
 
         let mut ical_event = Event::new();
@@ -66,6 +69,7 @@ impl ExportHandler {
         }
 
         calendar.push(ical_event);
+        debug!("ExportHandler: Event conversion complete");
         calendar
     }
 
@@ -74,15 +78,25 @@ impl ExportHandler {
         manager: &CalendarManager,
         calendar_id: &str,
     ) -> ExportResult<Calendar> {
+        info!("ExportHandler: Exporting calendar '{}' to iCal format", calendar_id);
+
         let calendar = manager
             .sources()
             .iter()
             .find(|c| c.info().id == calendar_id)
-            .ok_or_else(|| ExportError::CalendarNotFound(calendar_id.to_string()))?;
+            .ok_or_else(|| {
+                error!("ExportHandler: Calendar '{}' not found", calendar_id);
+                ExportError::CalendarNotFound(calendar_id.to_string())
+            })?;
 
         let events = calendar
             .fetch_events()
-            .map_err(|e| ExportError::IoError(e.to_string()))?;
+            .map_err(|e| {
+                error!("ExportHandler: Failed to fetch events: {}", e);
+                ExportError::IoError(e.to_string())
+            })?;
+
+        debug!("ExportHandler: Found {} events to export", events.len());
 
         let mut ical = Calendar::new();
 
@@ -108,6 +122,7 @@ impl ExportHandler {
             ical.push(ical_event);
         }
 
+        info!("ExportHandler: Successfully exported calendar '{}'", calendar_id);
         Ok(ical)
     }
 
@@ -117,11 +132,17 @@ impl ExportHandler {
         calendar_id: &str,
         path: P,
     ) -> ExportResult<()> {
+        info!("ExportHandler: Exporting calendar '{}' to file {:?}", calendar_id, path.as_ref());
+
         let ical = Self::calendar_to_ical(manager, calendar_id)?;
         let ical_string = ical.to_string();
 
-        fs::write(path, ical_string).map_err(|e| ExportError::IoError(e.to_string()))?;
+        fs::write(&path, ical_string).map_err(|e| {
+            error!("ExportHandler: Failed to write file: {}", e);
+            ExportError::IoError(e.to_string())
+        })?;
 
+        info!("ExportHandler: Successfully exported to {:?}", path.as_ref());
         Ok(())
     }
 
@@ -130,14 +151,19 @@ impl ExportHandler {
         manager: &CalendarManager,
         path: P,
     ) -> ExportResult<()> {
+        info!("ExportHandler: Exporting all calendars to file {:?}", path.as_ref());
+
         let mut combined = Calendar::new();
+        let mut total_events = 0;
 
         for calendar in manager.sources() {
             if !calendar.is_enabled() {
+                debug!("ExportHandler: Skipping disabled calendar '{}'", calendar.info().name);
                 continue;
             }
 
             if let Ok(events) = calendar.fetch_events() {
+                debug!("ExportHandler: Adding {} events from '{}'", events.len(), calendar.info().name);
                 for event in events {
                     let mut ical_event = Event::new();
                     ical_event.summary(&event.summary);
@@ -154,19 +180,28 @@ impl ExportHandler {
                     }
 
                     combined.push(ical_event);
+                    total_events += 1;
                 }
             }
         }
 
         let ical_string = combined.to_string();
-        fs::write(path, ical_string).map_err(|e| ExportError::IoError(e.to_string()))?;
+        fs::write(&path, ical_string).map_err(|e| {
+            error!("ExportHandler: Failed to write file: {}", e);
+            ExportError::IoError(e.to_string())
+        })?;
 
+        info!("ExportHandler: Exported {} events to {:?}", total_events, path.as_ref());
         Ok(())
     }
 
     /// Read an iCalendar file (placeholder for future import functionality)
     pub fn read_ical_file<P: AsRef<Path>>(path: P) -> ExportResult<String> {
-        fs::read_to_string(path).map_err(|e| ExportError::IoError(e.to_string()))
+        info!("ExportHandler: Reading iCal file {:?}", path.as_ref());
+        fs::read_to_string(&path).map_err(|e| {
+            error!("ExportHandler: Failed to read file: {}", e);
+            ExportError::IoError(e.to_string())
+        })
     }
 
     // TODO: Implement import functionality

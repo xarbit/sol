@@ -4,6 +4,7 @@
 //! including local database refreshes and remote CalDAV syncs.
 
 use crate::calendars::CalendarManager;
+use log::{debug, error, info, warn};
 use std::error::Error;
 
 /// Result type for sync operations
@@ -73,34 +74,50 @@ pub struct SyncHandler;
 impl SyncHandler {
     /// Sync a single calendar
     pub fn sync_calendar(manager: &mut CalendarManager, calendar_id: &str) -> SyncResult<()> {
+        info!("SyncHandler: Syncing calendar '{}'", calendar_id);
+
         let calendar = manager
             .sources_mut()
             .iter_mut()
             .find(|c| c.info().id == calendar_id)
-            .ok_or_else(|| SyncError::CalendarNotFound(calendar_id.to_string()))?;
+            .ok_or_else(|| {
+                error!("SyncHandler: Calendar '{}' not found", calendar_id);
+                SyncError::CalendarNotFound(calendar_id.to_string())
+            })?;
 
-        calendar.sync().map_err(|e| SyncError::SyncFailed {
-            calendar_id: calendar_id.to_string(),
-            reason: e.to_string(),
-        })
+        debug!("SyncHandler: Found calendar '{}', starting sync", calendar.info().name);
+        calendar.sync().map_err(|e| {
+            error!("SyncHandler: Sync failed for '{}': {}", calendar_id, e);
+            SyncError::SyncFailed {
+                calendar_id: calendar_id.to_string(),
+                reason: e.to_string(),
+            }
+        })?;
+
+        info!("SyncHandler: Successfully synced calendar '{}'", calendar_id);
+        Ok(())
     }
 
     /// Sync all enabled calendars
     pub fn sync_all(manager: &mut CalendarManager) -> SyncReport {
+        info!("SyncHandler: Starting sync of all enabled calendars");
         let mut statuses = Vec::new();
         let mut succeeded = 0;
         let mut failed = 0;
 
         for calendar in manager.sources_mut().iter_mut() {
             if !calendar.is_enabled() {
+                debug!("SyncHandler: Skipping disabled calendar '{}'", calendar.info().name);
                 continue;
             }
 
             let calendar_id = calendar.info().id.clone();
             let calendar_name = calendar.info().name.clone();
 
+            debug!("SyncHandler: Syncing calendar '{}'", calendar_name);
             match calendar.sync() {
                 Ok(()) => {
+                    debug!("SyncHandler: Sync succeeded for '{}'", calendar_name);
                     succeeded += 1;
                     statuses.push(CalendarSyncStatus {
                         calendar_id,
@@ -110,6 +127,7 @@ impl SyncHandler {
                     });
                 }
                 Err(e) => {
+                    warn!("SyncHandler: Sync failed for '{}': {}", calendar_name, e);
                     failed += 1;
                     statuses.push(CalendarSyncStatus {
                         calendar_id,
@@ -121,6 +139,7 @@ impl SyncHandler {
             }
         }
 
+        info!("SyncHandler: Sync complete - {} succeeded, {} failed", succeeded, failed);
         SyncReport {
             total: succeeded + failed,
             succeeded,
@@ -131,9 +150,11 @@ impl SyncHandler {
 
     /// Sync all calendars and return error if any failed
     pub fn sync_all_or_fail(manager: &mut CalendarManager) -> SyncResult<()> {
+        info!("SyncHandler: Syncing all calendars (fail on error)");
         let report = Self::sync_all(manager);
 
         if report.all_succeeded() {
+            info!("SyncHandler: All {} calendars synced successfully", report.total);
             Ok(())
         } else {
             let failures: Vec<(String, String)> = report
@@ -143,13 +164,14 @@ impl SyncHandler {
                 .map(|s| (s.calendar_id, s.error_message.unwrap_or_default()))
                 .collect();
 
+            error!("SyncHandler: {} calendars failed to sync", failures.len());
             Err(SyncError::MultipleFailed(failures))
         }
     }
 
     /// Check if any calendar requires network for sync
     pub fn has_remote_calendars(manager: &CalendarManager) -> bool {
-        manager.sources().iter().any(|c| {
+        let has_remote = manager.sources().iter().any(|c| {
             // Check calendar type - CalDAV calendars require network
             matches!(
                 c.info().calendar_type,
@@ -158,7 +180,9 @@ impl SyncHandler {
                     | crate::calendars::CalendarType::Outlook
                     | crate::calendars::CalendarType::ICloud
             )
-        })
+        });
+        debug!("SyncHandler: Has remote calendars: {}", has_remote);
+        has_remote
     }
 }
 

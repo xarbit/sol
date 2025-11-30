@@ -4,6 +4,7 @@
 //! including loading, saving, validation, and applying settings changes.
 
 use crate::settings::AppSettings;
+use log::{debug, error, info, warn};
 use std::error::Error;
 
 /// Result type for settings operations
@@ -38,32 +39,52 @@ pub struct SettingsHandler;
 impl SettingsHandler {
     /// Load settings from disk, returning defaults if not found
     pub fn load() -> SettingsResult<AppSettings> {
-        AppSettings::load().map_err(|e| SettingsError::LoadError(e.to_string()))
+        debug!("SettingsHandler: Loading settings from disk");
+        match AppSettings::load() {
+            Ok(settings) => {
+                info!("SettingsHandler: Settings loaded successfully");
+                debug!("SettingsHandler: show_week_numbers={}", settings.show_week_numbers);
+                Ok(settings)
+            }
+            Err(e) => {
+                warn!("SettingsHandler: Failed to load settings: {}", e);
+                Err(SettingsError::LoadError(e.to_string()))
+            }
+        }
     }
 
     /// Save settings to disk
     pub fn save(settings: &AppSettings) -> SettingsResult<()> {
-        settings
-            .save()
-            .map_err(|e| SettingsError::SaveError(e.to_string()))
+        debug!("SettingsHandler: Saving settings to disk");
+        settings.save().map_err(|e| {
+            error!("SettingsHandler: Failed to save settings: {}", e);
+            SettingsError::SaveError(e.to_string())
+        })?;
+        info!("SettingsHandler: Settings saved successfully");
+        Ok(())
     }
 
     /// Toggle week numbers display and save
     pub fn toggle_week_numbers(settings: &mut AppSettings) -> SettingsResult<()> {
-        settings.show_week_numbers = !settings.show_week_numbers;
+        let new_value = !settings.show_week_numbers;
+        info!("SettingsHandler: Toggling week numbers: {} -> {}", settings.show_week_numbers, new_value);
+        settings.show_week_numbers = new_value;
         Self::save(settings)
     }
 
     /// Set week numbers display and save
     pub fn set_week_numbers(settings: &mut AppSettings, show: bool) -> SettingsResult<()> {
+        info!("SettingsHandler: Setting week numbers to {}", show);
         settings.show_week_numbers = show;
         Self::save(settings)
     }
 
     /// Reset settings to defaults and save
     pub fn reset_to_defaults() -> SettingsResult<AppSettings> {
+        info!("SettingsHandler: Resetting settings to defaults");
         let settings = AppSettings::default();
         Self::save(&settings)?;
+        info!("SettingsHandler: Settings reset complete");
         Ok(settings)
     }
 }

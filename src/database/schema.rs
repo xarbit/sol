@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use log::{debug, error, info, trace};
 use rusqlite::{Connection, params, Result as SqlResult};
 use std::error::Error;
 use std::path::PathBuf;
@@ -25,11 +26,14 @@ impl Database {
     /// Open or create the database at the default location
     pub fn open() -> Result<Self, Box<dyn Error>> {
         let path = Self::get_database_path();
+        info!("Database: Opening database at {:?}", path);
         Self::open_at(path)
     }
 
     /// Open or create the database at a specific path
     pub fn open_at(path: PathBuf) -> Result<Self, Box<dyn Error>> {
+        debug!("Database: Opening database at {:?}", path);
+
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
@@ -41,6 +45,7 @@ impl Database {
         // Initialize schema
         db.init_schema()?;
 
+        info!("Database: Successfully opened database");
         Ok(db)
     }
 

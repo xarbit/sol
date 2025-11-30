@@ -2,6 +2,7 @@ use i18n_embed::{
     fluent::{fluent_language_loader, FluentLanguageLoader},
     DesktopLanguageRequester,
 };
+use log::{debug, info, warn};
 use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
@@ -13,14 +14,13 @@ lazy_static::lazy_static! {
         let loader = fluent_language_loader!();
         let requested_languages = DesktopLanguageRequester::requested_languages();
 
-        // Debug: Print requested languages
-        eprintln!("Requested languages: {:?}", requested_languages);
+        debug!("Localization: Requested languages: {:?}", requested_languages);
 
         if let Err(e) = i18n_embed::select(&loader, &Localizations, &requested_languages) {
-            eprintln!("Failed to load requested locale, falling back to English: {:?}", e);
+            warn!("Localization: Failed to load requested locale, falling back to English: {:?}", e);
         }
 
-        eprintln!("Selected language: {:?}", loader.current_languages());
+        info!("Localization: Selected language: {:?}", loader.current_languages());
 
         loader
     };

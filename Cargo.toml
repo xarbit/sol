@@ -55,3 +55,7 @@ uuid = { version = "1.11", features = ["v4"] }
 
 # SQLite database with SQLCipher encryption support
 rusqlite = { version = "0.32", features = ["bundled-sqlcipher"] }
+
+# Logging
+log = "0.4"
+env_logger = "0.11"
