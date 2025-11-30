@@ -49,8 +49,27 @@ Sol is a calendar application for the COSMIC desktop built with libcosmic (iced-
 ### Calendar Backend
 - `calendars/calendar_source.rs` - `CalendarSource` trait for pluggable backends
 - `calendars/local_calendar.rs` - Local calendar implementation
-- `calendars/caldav_calendar.rs` - CalDAV protocol (WIP)
-- `caldav.rs` - CalDAV protocol types and operations
+- `calendars/caldav_calendar.rs` - CalDAV calendar (uses CalDavProtocol)
+
+### Protocol Layer (`protocols/`)
+Protocol implementations handle the actual storage/sync operations. The EventHandler middleware routes events to the appropriate protocol.
+
+```
+UI → Update Handlers → EventHandler (middleware) → Protocols
+                                                      ├── LocalProtocol (SQLite)
+                                                      └── CalDavProtocol (HTTP/CalDAV)
+```
+
+- `protocols/mod.rs` - `Protocol` trait definition
+- `protocols/local.rs` - Local SQLite storage protocol
+- `protocols/caldav.rs` - CalDAV HTTP protocol
+
+### Services Layer (`services/`)
+- `services/event_handler.rs` - Middleware between UI and protocols
+  - Routes events to correct protocol (local vs remote)
+  - Validates events before saving
+  - Handles sync and conflict resolution
+  - Centralizes cache invalidation
 
 ### Constants
 - `layout_constants.rs` - UI dimensions and spacing
@@ -72,3 +91,6 @@ fl!("app-title")  // Returns localized string
 - `CalendarCache` should be used for expensive date calculations
 - Keyboard shortcuts defined in `keyboard.rs` using `menu::KeyBind`
 - Calendar backends implement `CalendarSource` trait
+- **Event operations go through EventHandler**, not directly to calendars
+- **Protocols are storage-agnostic** - they only know how to read/write events
+- **EventHandler is the single point** for event CRUD operations

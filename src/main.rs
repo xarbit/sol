@@ -15,6 +15,8 @@ mod localized_names;
 mod menu_action;
 mod message;
 mod models;
+mod protocols;
+mod services;
 mod settings;
 mod storage;
 mod styles;

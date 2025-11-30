@@ -1,4 +1,7 @@
 //! Event management handlers (quick events and event dialog)
+//!
+//! These handlers delegate to the EventHandler service for actual event operations.
+//! This ensures consistent validation, routing, and cache management.
 
 use chrono::{NaiveDate, NaiveTime, TimeZone, Utc};
 use cosmic::widget::{calendar::CalendarModel, text_editor};
@@ -6,6 +9,7 @@ use uuid::Uuid;
 
 use crate::app::{CosmicCalendar, EventDialogState};
 use crate::caldav::{AlertTime, CalendarEvent, RepeatFrequency, TravelTime};
+use crate::services::EventHandler;
 
 /// Commit the quick event being edited - create a new event in the selected calendar
 pub fn handle_commit_quick_event(app: &mut CosmicCalendar) {
@@ -51,21 +55,10 @@ pub fn handle_commit_quick_event(app: &mut CosmicCalendar) {
         notes: None,
     };
 
-    // Find the calendar and add the event
-    if let Some(calendar) = app
-        .calendar_manager
-        .sources_mut()
-        .iter_mut()
-        .find(|c| c.info().id == calendar_id)
-    {
-        if let Err(e) = calendar.add_event(event) {
-            eprintln!("Failed to add event: {}", e);
-            return;
-        }
-        // Sync to persist the event
-        if let Err(e) = calendar.sync() {
-            eprintln!("Failed to sync calendar: {}", e);
-        }
+    // Use EventHandler to add the event (handles validation, storage, and sync)
+    if let Err(e) = EventHandler::add_event(&mut app.calendar_manager, &calendar_id, event) {
+        eprintln!("Failed to add event: {}", e);
+        return;
     }
 
     // Refresh the cached events to show the new event
@@ -74,12 +67,9 @@ pub fn handle_commit_quick_event(app: &mut CosmicCalendar) {
 
 /// Delete an event by its UID from all calendars
 pub fn handle_delete_event(app: &mut CosmicCalendar, uid: String) {
-    for calendar in app.calendar_manager.sources_mut().iter_mut() {
-        if calendar.delete_event(&uid).is_ok() {
-            // Sync to persist the deletion
-            let _ = calendar.sync();
-            break;
-        }
+    // Use EventHandler to delete the event (searches all calendars)
+    if let Err(e) = EventHandler::delete_event(&mut app.calendar_manager, &uid) {
+        eprintln!("Failed to delete event: {}", e);
     }
     // Refresh cached events to reflect deletion
     app.refresh_cached_events();
@@ -163,21 +153,13 @@ pub fn handle_open_new_event_dialog(app: &mut CosmicCalendar) {
 
 /// Open the event dialog for editing an existing event
 pub fn handle_open_edit_event_dialog(app: &mut CosmicCalendar, uid: String) {
-    // Find the event in all calendars
-    let mut found_event: Option<(CalendarEvent, String)> = None;
-
-    for calendar in app.calendar_manager.sources() {
-        if let Ok(events) = calendar.fetch_events() {
-            if let Some(event) = events.iter().find(|e| e.uid == uid) {
-                found_event = Some((event.clone(), calendar.info().id.clone()));
-                break;
-            }
+    // Use EventHandler to find the event across all calendars
+    let (event, calendar_id) = match EventHandler::find_event(&app.calendar_manager, &uid) {
+        Ok(result) => result,
+        Err(e) => {
+            eprintln!("Event not found: {}", e);
+            return;
         }
-    }
-
-    let Some((event, calendar_id)) = found_event else {
-        eprintln!("Event not found: {}", uid);
-        return;
     };
 
     // Convert UTC times to local dates/times
@@ -288,30 +270,18 @@ pub fn handle_confirm_event_dialog(app: &mut CosmicCalendar) {
         },
     };
 
-    // If editing, delete the old event first (it might be in a different calendar)
-    if let Some(ref old_uid) = dialog.editing_uid {
-        for calendar in app.calendar_manager.sources_mut().iter_mut() {
-            if calendar.delete_event(old_uid).is_ok() {
-                let _ = calendar.sync();
-                break;
-            }
-        }
-    }
+    // Use EventHandler for create or update
+    let result = if dialog.editing_uid.is_some() {
+        // Update existing event (EventHandler handles delete + add)
+        EventHandler::update_event(&mut app.calendar_manager, &dialog.calendar_id, event)
+    } else {
+        // Create new event
+        EventHandler::add_event(&mut app.calendar_manager, &dialog.calendar_id, event)
+    };
 
-    // Add to the selected calendar
-    if let Some(calendar) = app
-        .calendar_manager
-        .sources_mut()
-        .iter_mut()
-        .find(|c| c.info().id == dialog.calendar_id)
-    {
-        if let Err(e) = calendar.add_event(event) {
-            eprintln!("Failed to save event: {}", e);
-            return;
-        }
-        if let Err(e) = calendar.sync() {
-            eprintln!("Failed to sync calendar: {}", e);
-        }
+    if let Err(e) = result {
+        eprintln!("Failed to save event: {}", e);
+        return;
     }
 
     // Refresh cached events
