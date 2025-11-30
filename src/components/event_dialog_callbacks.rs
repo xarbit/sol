@@ -13,7 +13,7 @@ use chrono::NaiveDate;
 use cosmic::widget::text_editor;
 
 use crate::caldav::{AlertTime, RepeatFrequency, TravelTime};
-use crate::dialogs::EventDialogField;
+use crate::app::EventDialogField;
 
 /// Callbacks for the event dialog component
 ///

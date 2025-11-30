@@ -1,6 +1,7 @@
 use crate::cache::CalendarCache;
 use crate::calendars::CalendarManager;
 use crate::components;
+use crate::dialogs::ActiveDialog;
 use crate::fl;
 use crate::locale::LocalePreferences;
 use crate::menu_action::MenuAction;
@@ -11,10 +12,11 @@ use crate::views::{self, CalendarView};
 use chrono::{Datelike, NaiveDate};
 use cosmic::app::Core;
 use cosmic::iced::keyboard;
-use cosmic::widget::{about, calendar::CalendarModel, menu, text_editor};
+use cosmic::widget::calendar::CalendarModel;
+use cosmic::widget::{about, menu, text_editor};
 use cosmic::widget::menu::Action as _; // Import trait for .message() method
 use cosmic::{Application, Element};
-use log::{debug, info};
+use log::info;
 use std::collections::HashMap;
 
 const APP_ID: &str = "io.github.xarbit.SolCalendar";
@@ -133,7 +135,6 @@ pub struct CosmicCalendar {
     /// Track previous condensed state to detect changes and sync sidebar
     pub last_condensed: bool,
     pub show_search: bool,
-    pub color_picker_open: Option<String>,
     pub cache: CalendarCache,
     pub week_state: WeekState,
     pub day_state: DayState,
@@ -152,12 +153,22 @@ pub struct CosmicCalendar {
     pub cached_month_events: std::collections::HashMap<chrono::NaiveDate, Vec<crate::components::DisplayEvent>>,
     /// Color of the selected calendar (cached for quick event input)
     pub selected_calendar_color: String,
+    /// Centralized dialog state - only one dialog can be open at a time
+    pub active_dialog: ActiveDialog,
+
+    // Legacy fields - to be removed after full migration
     /// Calendar dialog state (for Create/Edit) - None when dialog is closed
+    #[deprecated(note = "Use active_dialog instead")]
     pub calendar_dialog: Option<CalendarDialogState>,
     /// Delete calendar confirmation dialog state - None when dialog is closed
+    #[deprecated(note = "Use active_dialog instead")]
     pub delete_calendar_dialog: Option<DeleteCalendarDialogState>,
     /// Event dialog state (for Create/Edit) - None when dialog is closed
+    #[deprecated(note = "Use active_dialog instead")]
     pub event_dialog: Option<EventDialogState>,
+    /// Color picker open state
+    #[deprecated(note = "Use active_dialog instead")]
+    pub color_picker_open: Option<String>,
 }
 
 impl CosmicCalendar {
@@ -210,6 +221,7 @@ impl CosmicCalendar {
         // Cache events for current month
         let cached_month_events = calendar_manager.get_display_events_for_month(year, month);
 
+        #[allow(deprecated)]
         CosmicCalendar {
             core,
             current_view: CalendarView::Month,
@@ -218,7 +230,6 @@ impl CosmicCalendar {
             show_sidebar: true,
             last_condensed: false, // Will be synced on first render
             show_search: false,
-            color_picker_open: None,
             cache,
             week_state: WeekState::current_with_first_day(locale.first_day_of_week, &locale),
             day_state: DayState::current(&locale),
@@ -232,9 +243,12 @@ impl CosmicCalendar {
             quick_event_editing: None,
             cached_month_events,
             selected_calendar_color,
+            active_dialog: ActiveDialog::None,
+            // Legacy fields - kept for backwards compatibility during migration
             calendar_dialog: None,
             delete_calendar_dialog: None,
             event_dialog: None,
+            color_picker_open: None,
         }
     }
 
@@ -315,6 +329,7 @@ impl CosmicCalendar {
     }
 
     /// Render the sidebar
+    #[allow(deprecated)]
     pub fn render_sidebar(&self) -> Element<'_, Message> {
         let selected_day = if self.mini_calendar_state.year == self.selected_date.year()
             && self.mini_calendar_state.month == self.selected_date.month()
@@ -423,6 +438,11 @@ impl Application for CosmicCalendar {
                     modifiers,
                     ..
                 }) => {
+                    // Handle Escape key to close dialogs (no modifiers)
+                    if key == keyboard::Key::Named(keyboard::key::Named::Escape) {
+                        return Some(Message::CloseDialog);
+                    }
+
                     // Convert modifiers to menu modifiers
                     let mut menu_modifiers = Vec::new();
                     if modifiers.control() {

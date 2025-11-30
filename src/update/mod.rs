@@ -16,6 +16,7 @@ use cosmic::app::Task;
 use log::{debug, info, warn};
 
 use crate::app::CosmicCalendar;
+use crate::dialogs::DialogManager;
 use crate::message::Message;
 use crate::services::SettingsHandler;
 
@@ -43,6 +44,26 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
     }
 
     match message {
+        // === Dialog Management (Centralized) ===
+        Message::Dialog(action) => {
+            debug!("Message::Dialog: {:?}", action);
+            // Handle dialog actions through DialogManager
+            DialogManager::handle_action(&mut app.active_dialog, action);
+        }
+        Message::CloseDialog => {
+            debug!("Message::CloseDialog: Closing all dialogs");
+            // Close all legacy dialog fields
+            #[allow(deprecated)]
+            {
+                app.event_dialog = None;
+                app.calendar_dialog = None;
+                app.delete_calendar_dialog = None;
+                app.color_picker_open = None;
+            }
+            // Also close via DialogManager for future migration
+            DialogManager::close(&mut app.active_dialog);
+        }
+
         // === View Navigation ===
         Message::ChangeView(view) => {
             // When changing views, sync views to the selected_date so the new view
@@ -92,17 +113,20 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         // === Calendar Management ===
         Message::ToggleCalendar(id) => {
             // Close color picker when interacting with other elements
-            app.color_picker_open = None;
+            #[allow(deprecated)]
+            { app.color_picker_open = None; }
             handle_toggle_calendar(app, id);
         }
         Message::SelectCalendar(id) => {
             // Close color picker when selecting a different calendar
-            app.color_picker_open = None;
+            #[allow(deprecated)]
+            { app.color_picker_open = None; }
             app.selected_calendar_id = Some(id);
             app.update_selected_calendar_color();
         }
         Message::ToggleColorPicker(id) => {
             // Toggle: if already open for this calendar, close it; otherwise open it
+            #[allow(deprecated)]
             if app.color_picker_open.as_ref() == Some(&id) {
                 app.color_picker_open = None;
             } else {
@@ -110,32 +134,38 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::CloseColorPicker => {
-            app.color_picker_open = None;
+            #[allow(deprecated)]
+            { app.color_picker_open = None; }
         }
         Message::ChangeCalendarColor(id, color) => {
             handle_change_calendar_color(app, id, color);
         }
         Message::OpenNewCalendarDialog => {
-            app.color_picker_open = None;
+            #[allow(deprecated)]
+            { app.color_picker_open = None; }
             handle_open_calendar_dialog_create(app);
         }
         Message::OpenEditCalendarDialog(id) => {
-            app.color_picker_open = None;
+            #[allow(deprecated)]
+            { app.color_picker_open = None; }
             handle_open_calendar_dialog_edit(app, id);
         }
         Message::EditCalendarByIndex(index) => {
-            app.color_picker_open = None;
+            #[allow(deprecated)]
+            { app.color_picker_open = None; }
             if let Some(calendar) = app.calendar_manager.sources().get(index) {
                 let id = calendar.info().id.clone();
                 handle_open_calendar_dialog_edit(app, id);
             }
         }
         Message::CalendarDialogNameChanged(name) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.calendar_dialog {
                 dialog.name = name;
             }
         }
         Message::CalendarDialogColorChanged(color) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.calendar_dialog {
                 dialog.color = color;
             }
@@ -144,18 +174,22 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             handle_confirm_calendar_dialog(app);
         }
         Message::CancelCalendarDialog => {
-            app.calendar_dialog = None;
+            #[allow(deprecated)]
+            { app.calendar_dialog = None; }
         }
         Message::DeleteSelectedCalendar => {
-            app.color_picker_open = None;
+            #[allow(deprecated)]
+            { app.color_picker_open = None; }
             handle_delete_selected_calendar(app);
         }
         Message::RequestDeleteCalendar(id) => {
-            app.color_picker_open = None;
+            #[allow(deprecated)]
+            { app.color_picker_open = None; }
             handle_request_delete_calendar(app, id);
         }
         Message::SelectCalendarByIndex(index) => {
-            app.color_picker_open = None;
+            #[allow(deprecated)]
+            { app.color_picker_open = None; }
             if let Some(calendar) = app.calendar_manager.sources().get(index) {
                 let id = calendar.info().id.clone();
                 app.selected_calendar_id = Some(id);
@@ -163,7 +197,8 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::DeleteCalendarByIndex(index) => {
-            app.color_picker_open = None;
+            #[allow(deprecated)]
+            { app.color_picker_open = None; }
             if let Some(calendar) = app.calendar_manager.sources().get(index) {
                 let id = calendar.info().id.clone();
                 handle_request_delete_calendar(app, id);
@@ -173,7 +208,8 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             handle_confirm_delete_calendar(app);
         }
         Message::CancelDeleteCalendar => {
-            app.delete_calendar_dialog = None;
+            #[allow(deprecated)]
+            { app.delete_calendar_dialog = None; }
         }
 
         // === Event Management - Quick Events ===
@@ -201,26 +237,31 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             handle_open_edit_event_dialog(app, uid);
         }
         Message::EventDialogToggleEdit(field, editing) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.editing_field = if editing { Some(field) } else { None };
             }
         }
         Message::EventDialogTitleChanged(title) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.title = title;
             }
         }
         Message::EventDialogLocationChanged(location) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.location = location;
             }
         }
         Message::EventDialogAllDayToggled(all_day) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.all_day = all_day;
             }
         }
         Message::EventDialogStartDateInputChanged(input) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.start_date_input = input.clone();
                 // Try to parse the date
@@ -235,6 +276,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogStartDateChanged(date) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.start_date = date;
                 dialog.start_date_input = date.format("%Y-%m-%d").to_string();
@@ -249,22 +291,26 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogToggleStartDatePicker => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.start_date_picker_open = !dialog.start_date_picker_open;
                 dialog.end_date_picker_open = false; // Close the other picker
             }
         }
         Message::EventDialogStartDateCalendarPrev => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.start_date_calendar.show_prev_month();
             }
         }
         Message::EventDialogStartDateCalendarNext => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.start_date_calendar.show_next_month();
             }
         }
         Message::EventDialogToggleStartTimePicker => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.start_time_picker_open = !dialog.start_time_picker_open;
                 dialog.end_time_picker_open = false;
@@ -273,6 +319,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogStartTimeHourChanged(hour) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 let current = dialog.start_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(9, 0, 0).unwrap());
                 if let Some(new_time) = chrono::NaiveTime::from_hms_opt(hour, current.minute(), 0) {
@@ -282,6 +329,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogStartTimeMinuteChanged(minute) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 let current = dialog.start_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(9, 0, 0).unwrap());
                 if let Some(new_time) = chrono::NaiveTime::from_hms_opt(current.hour(), minute, 0) {
@@ -291,6 +339,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogEndDateInputChanged(input) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.end_date_input = input.clone();
                 // Try to parse the date
@@ -300,6 +349,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogEndDateChanged(date) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.end_date = date;
                 dialog.end_date_input = date.format("%Y-%m-%d").to_string();
@@ -308,22 +358,26 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogToggleEndDatePicker => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.end_date_picker_open = !dialog.end_date_picker_open;
                 dialog.start_date_picker_open = false; // Close the other picker
             }
         }
         Message::EventDialogEndDateCalendarPrev => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.end_date_calendar.show_prev_month();
             }
         }
         Message::EventDialogEndDateCalendarNext => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.end_date_calendar.show_next_month();
             }
         }
         Message::EventDialogToggleEndTimePicker => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.end_time_picker_open = !dialog.end_time_picker_open;
                 dialog.start_time_picker_open = false;
@@ -332,6 +386,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogEndTimeHourChanged(hour) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 let current = dialog.end_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(10, 0, 0).unwrap());
                 if let Some(new_time) = chrono::NaiveTime::from_hms_opt(hour, current.minute(), 0) {
@@ -341,6 +396,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogEndTimeMinuteChanged(minute) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 let current = dialog.end_time.unwrap_or_else(|| chrono::NaiveTime::from_hms_opt(10, 0, 0).unwrap());
                 if let Some(new_time) = chrono::NaiveTime::from_hms_opt(current.hour(), minute, 0) {
@@ -350,26 +406,31 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogTravelTimeChanged(travel_time) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.travel_time = travel_time;
             }
         }
         Message::EventDialogRepeatChanged(repeat) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.repeat = repeat;
             }
         }
         Message::EventDialogCalendarChanged(calendar_id) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.calendar_id = calendar_id;
             }
         }
         Message::EventDialogInviteeInputChanged(input) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.invitee_input = input;
             }
         }
         Message::EventDialogAddInvitee => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 let email = dialog.invitee_input.trim().to_string();
                 if !email.is_empty() && !dialog.invitees.contains(&email) {
@@ -379,6 +440,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogRemoveInvitee(index) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 if index < dialog.invitees.len() {
                     dialog.invitees.remove(index);
@@ -386,16 +448,19 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogAlertChanged(alert) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.alert = alert;
             }
         }
         Message::EventDialogAlertSecondChanged(alert) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.alert_second = alert;
             }
         }
         Message::EventDialogAddAttachment(path) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 if !dialog.attachments.contains(&path) {
                     dialog.attachments.push(path);
@@ -403,6 +468,7 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogRemoveAttachment(index) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 if index < dialog.attachments.len() {
                     dialog.attachments.remove(index);
@@ -410,11 +476,13 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             }
         }
         Message::EventDialogUrlChanged(url) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.url = url;
             }
         }
         Message::EventDialogNotesAction(action) => {
+            #[allow(deprecated)]
             if let Some(ref mut dialog) = app.event_dialog {
                 dialog.notes_content.perform(action);
             }

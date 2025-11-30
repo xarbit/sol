@@ -1,16 +1,43 @@
-//! Dialog state and data structures
+//! Dialog state and management.
 //!
-//! This module contains dialog-related state structs, separating
-//! business data from UI state.
+//! This module provides centralized dialog management for the application.
+//! All dialogs, popups, and modals are managed through the `DialogManager`,
+//! ensuring consistent behavior:
 //!
-//! These types are a foundation for future refactoring to fully separate
-//! UI state from business data in the dialog components.
+//! - Only one dialog can be open at a time
+//! - Opening a new dialog closes any existing one
+//! - Escape key closes the current dialog
+//! - Focus loss behavior is handled uniformly
+//!
+//! # Usage
+//!
+//! ```rust
+//! use crate::dialogs::{ActiveDialog, DialogManager, DialogAction};
+//!
+//! // Open a dialog
+//! DialogManager::open(&mut app.active_dialog, ActiveDialog::ColorPicker { calendar_id });
+//!
+//! // Close via Escape
+//! DialogManager::handle_escape(&mut app.active_dialog);
+//!
+//! // Check if dialog is open
+//! if app.active_dialog.is_open() { ... }
+//! ```
 
-// Allow unused for now - these are foundation types for future refactoring
-#![allow(dead_code)]
-
+mod manager;
 mod event_dialog;
 mod calendar_dialog;
 
-pub use event_dialog::{EventDialogData, EventDialogUiState, EventDialogField};
+pub use manager::{
+    ActiveDialog,
+    DialogAction,
+    DialogManager,
+};
+
+// Keep old exports for backwards compatibility during migration
+// Note: EventDialogData is managed through legacy fields because text_editor::Content
+// doesn't implement Clone
+#[allow(unused_imports)]
+pub use event_dialog::EventDialogUiState;
+#[allow(unused_imports)]
 pub use calendar_dialog::{CalendarDialogData, CalendarDialogMode};

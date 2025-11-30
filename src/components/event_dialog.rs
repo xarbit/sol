@@ -2,8 +2,9 @@
 //! Uses COSMIC settings-style grouped sections with editable_input
 
 use chrono::Weekday;
+use cosmic::iced::widget::stack;
 use cosmic::iced::Length;
-use cosmic::widget::{button, calendar, column, container, popover, row, scrollable, settings, text, text_editor, toggler};
+use cosmic::widget::{button, calendar, column, container, mouse_area, popover, row, scrollable, settings, text, text_editor, toggler};
 use cosmic::widget::editable_input;
 use cosmic::{widget, Element};
 
@@ -506,23 +507,34 @@ pub fn render_event_dialog<'a>(
         .width(Length::Fill)
         .height(Length::Fill);
 
-    // Dialog container with styling
-    container(
-        container(scrollable_content)
-            .padding([8, 0]) // Small vertical padding for the container, scrollbar stays outside content
-            .width(Length::Fixed(580.0))
-            .max_height(700.0)
-            .style(dialog_container_style),
+    // Dialog card with styling
+    let dialog_card = container(scrollable_content)
+        .padding([8, 0]) // Small vertical padding for the container, scrollbar stays outside content
+        .width(Length::Fixed(580.0))
+        .max_height(700.0)
+        .style(dialog_container_style);
+
+    // Clickable backdrop that closes the dialog
+    let backdrop = mouse_area(
+        container(widget::text(""))
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(|_theme: &cosmic::Theme| container::Style {
+                background: Some(cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
+                ..Default::default()
+            }),
     )
-    .width(Length::Fill)
-    .height(Length::Fill)
-    .center_x(Length::Fill)
-    .center_y(Length::Fill)
-    .style(|_theme: &cosmic::Theme| container::Style {
-        background: Some(cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
-        ..Default::default()
-    })
-    .into()
+    .on_press(Message::CloseDialog);
+
+    // Center the dialog card
+    let centered_dialog = container(dialog_card)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .center_x(Length::Fill)
+        .center_y(Length::Fill);
+
+    // Stack: backdrop on bottom, dialog on top
+    stack![backdrop, centered_dialog].into()
 }
 
 /// Style function for popup containers (calendar picker, etc.)

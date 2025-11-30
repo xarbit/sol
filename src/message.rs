@@ -1,11 +1,18 @@
 use chrono::NaiveDate;
 use crate::app::EventDialogField;
 use crate::caldav::{AlertTime, RepeatFrequency, TravelTime};
+use crate::dialogs::DialogAction;
 use crate::views::CalendarView;
 use cosmic::widget::text_editor;
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    // Dialog management (centralized)
+    /// Handle a dialog action (open, close, update)
+    Dialog(DialogAction),
+    /// Close any open dialog (Escape key)
+    CloseDialog,
+
     // View navigation
     ChangeView(CalendarView),
     PreviousPeriod,

@@ -1,5 +1,6 @@
+use cosmic::iced::widget::stack;
 use cosmic::iced::Length;
-use cosmic::widget::{button, column, container, row, text, text_input};
+use cosmic::widget::{button, column, container, mouse_area, row, text, text_input};
 use cosmic::{widget, Element};
 
 use crate::app::{CalendarDialogMode, CalendarDialogState, DeleteCalendarDialogState};
@@ -100,38 +101,49 @@ pub fn render_calendar_dialog(state: &CalendarDialogState) -> Element<'_, Messag
         )
         .push(buttons);
 
-    // Dialog container with styling
-    container(
-        container(content)
-            .padding(PADDING_STANDARD)
-            .width(Length::Fixed(320.0))
-            .style(|theme: &cosmic::Theme| {
-                let cosmic = theme.cosmic();
-                container::Style {
-                    background: Some(cosmic::iced::Background::Color(cosmic.background.base.into())),
-                    border: cosmic::iced::Border {
-                        radius: cosmic.corner_radii.radius_m.into(),
-                        width: 1.0,
-                        color: cosmic.bg_divider().into(),
-                    },
-                    shadow: cosmic::iced::Shadow {
-                        color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.3),
-                        offset: cosmic::iced::Vector::new(0.0, 4.0),
-                        blur_radius: 16.0,
-                    },
-                    ..Default::default()
-                }
+    // Dialog card with styling
+    let dialog_card = container(content)
+        .padding(PADDING_STANDARD)
+        .width(Length::Fixed(320.0))
+        .style(|theme: &cosmic::Theme| {
+            let cosmic = theme.cosmic();
+            container::Style {
+                background: Some(cosmic::iced::Background::Color(cosmic.background.base.into())),
+                border: cosmic::iced::Border {
+                    radius: cosmic.corner_radii.radius_m.into(),
+                    width: 1.0,
+                    color: cosmic.bg_divider().into(),
+                },
+                shadow: cosmic::iced::Shadow {
+                    color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.3),
+                    offset: cosmic::iced::Vector::new(0.0, 4.0),
+                    blur_radius: 16.0,
+                },
+                ..Default::default()
+            }
+        });
+
+    // Clickable backdrop that closes the dialog
+    let backdrop = mouse_area(
+        container(widget::text(""))
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(|_theme: &cosmic::Theme| container::Style {
+                background: Some(cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
+                ..Default::default()
             }),
     )
-    .width(Length::Fill)
-    .height(Length::Fill)
-    .center_x(Length::Fill)
-    .center_y(Length::Fill)
-    .style(|_theme: &cosmic::Theme| container::Style {
-        background: Some(cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
-        ..Default::default()
-    })
-    .into()
+    .on_press(Message::CloseDialog);
+
+    // Center the dialog card
+    let centered_dialog = container(dialog_card)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .center_x(Length::Fill)
+        .center_y(Length::Fill);
+
+    // Stack: backdrop on bottom, dialog on top
+    stack![backdrop, centered_dialog].into()
 }
 
 /// Render the delete calendar confirmation dialog
@@ -158,36 +170,47 @@ pub fn render_delete_calendar_dialog(state: &DeleteCalendarDialogState) -> Eleme
         )))
         .push(buttons);
 
-    // Dialog container with styling
-    container(
-        container(content)
-            .padding(PADDING_STANDARD)
-            .width(Length::Fixed(360.0))
-            .style(|theme: &cosmic::Theme| {
-                let cosmic = theme.cosmic();
-                container::Style {
-                    background: Some(cosmic::iced::Background::Color(cosmic.background.base.into())),
-                    border: cosmic::iced::Border {
-                        radius: cosmic.corner_radii.radius_m.into(),
-                        width: 1.0,
-                        color: cosmic.bg_divider().into(),
-                    },
-                    shadow: cosmic::iced::Shadow {
-                        color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.3),
-                        offset: cosmic::iced::Vector::new(0.0, 4.0),
-                        blur_radius: 16.0,
-                    },
-                    ..Default::default()
-                }
+    // Dialog card with styling
+    let dialog_card = container(content)
+        .padding(PADDING_STANDARD)
+        .width(Length::Fixed(360.0))
+        .style(|theme: &cosmic::Theme| {
+            let cosmic = theme.cosmic();
+            container::Style {
+                background: Some(cosmic::iced::Background::Color(cosmic.background.base.into())),
+                border: cosmic::iced::Border {
+                    radius: cosmic.corner_radii.radius_m.into(),
+                    width: 1.0,
+                    color: cosmic.bg_divider().into(),
+                },
+                shadow: cosmic::iced::Shadow {
+                    color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.3),
+                    offset: cosmic::iced::Vector::new(0.0, 4.0),
+                    blur_radius: 16.0,
+                },
+                ..Default::default()
+            }
+        });
+
+    // Clickable backdrop that closes the dialog
+    let backdrop = mouse_area(
+        container(widget::text(""))
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(|_theme: &cosmic::Theme| container::Style {
+                background: Some(cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
+                ..Default::default()
             }),
     )
-    .width(Length::Fill)
-    .height(Length::Fill)
-    .center_x(Length::Fill)
-    .center_y(Length::Fill)
-    .style(|_theme: &cosmic::Theme| container::Style {
-        background: Some(cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.5).into()),
-        ..Default::default()
-    })
-    .into()
+    .on_press(Message::CloseDialog);
+
+    // Center the dialog card
+    let centered_dialog = container(dialog_card)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .center_x(Length::Fill)
+        .center_y(Length::Fill);
+
+    // Stack: backdrop on bottom, dialog on top
+    stack![backdrop, centered_dialog].into()
 }
