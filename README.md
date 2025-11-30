@@ -4,7 +4,7 @@
   # Sol - a Calendar for the COSMIC Desktop
 </div>
 
-![Sol Calendar](images/image1.png)
+![Month View](images/image1.png)
 
 ![Day view](images/day.png)
 
