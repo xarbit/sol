@@ -66,6 +66,9 @@ pub struct DayCellConfig {
     /// Maximum slot index used in this week (for consistent vertical offset)
     /// All day cells in the same week should have the same max_slot value
     pub week_max_slot: Option<usize>,
+    /// Slots occupied by date events on THIS specific day (for Tetris-style rendering)
+    /// Timed events will fill empty slots instead of being pushed below
+    pub day_occupied_slots: std::collections::HashSet<usize>,
     /// If Some, show quick event input with (editing_text, calendar_color)
     pub quick_event: Option<(String, String)>,
     /// Whether this day is part of the current drag selection range
@@ -143,12 +146,12 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
                 let show_overflow = display_mode.show_overflow();
 
                 if display_mode.is_compact() {
-                    // Compact mode: thin color lines without text
+                    // Compact mode: Tetris-style thin color indicators without text
                     let compact_events = render_compact_events(
                         config.events.clone(),
                         max_visible,
                         current_date,
-                        &config.event_slots,
+                        &config.day_occupied_slots,
                         config.week_max_slot,
                     );
 
@@ -168,12 +171,13 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
                         );
                     }
                 } else {
-                    // Full mode: unified column with placeholders followed by timed events
+                    // Full mode: Tetris-style rendering with timed events filling empty slots
                     let unified = render_unified_events_with_selection(
                         config.events.clone(),
                         max_visible,
                         current_date,
                         config.week_max_slot,
+                        &config.day_occupied_slots,
                         config.selected_event_uid.as_deref(),
                         config.event_drag_active,
                         config.dragging_event_uid.as_deref(),

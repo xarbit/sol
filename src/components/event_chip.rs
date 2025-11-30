@@ -475,17 +475,21 @@ pub fn render_unified_events(
     current_date: NaiveDate,
     week_max_slot: Option<usize>,
 ) -> UnifiedEventsResult {
-    render_unified_events_with_selection(events, max_visible, current_date, week_max_slot, None, false, None)
+    // Use empty set for day_occupied_slots - this legacy function doesn't do Tetris-style rendering
+    let empty_slots = std::collections::HashSet::new();
+    render_unified_events_with_selection(events, max_visible, current_date, week_max_slot, &empty_slots, None, false, None)
 }
 
 /// Render events as a unified column with selection support.
 /// Timed events are rendered with click handlers and visual feedback for selection.
+/// Uses Tetris-style slot filling: timed events fill empty slots where date events aren't present.
 ///
 /// # Arguments
 /// * `events` - Events to render
 /// * `max_visible` - Maximum number of events to show
 /// * `current_date` - The date of the cell
-/// * `week_max_slot` - Maximum slot index for the week (determines placeholder count)
+/// * `week_max_slot` - Maximum slot index for the week (determines total slot count)
+/// * `day_occupied_slots` - Slots occupied by date events on THIS specific day
 /// * `selected_event_uid` - UID of the currently selected event (if any)
 /// * `dragging_event_uid` - UID of the event currently being dragged (if any)
 pub fn render_unified_events_with_selection(
@@ -493,6 +497,7 @@ pub fn render_unified_events_with_selection(
     max_visible: usize,
     current_date: NaiveDate,
     week_max_slot: Option<usize>,
+    day_occupied_slots: &std::collections::HashSet<usize>,
     selected_event_uid: Option<&str>,
     is_drag_active: bool,
     dragging_event_uid: Option<&str>,
@@ -504,9 +509,9 @@ pub fn render_unified_events_with_selection(
     // Sort timed events by start time
     timed_events.sort_by(|a, b| a.start_time.cmp(&b.start_time));
 
-    // Calculate placeholder count from week_max_slot
-    // The overlay renders slots 0..=max_slot, so we need max_slot+1 placeholders
-    let total_placeholders = week_max_slot.map(|m| m + 1).unwrap_or(0);
+    // Calculate total slots from week_max_slot
+    // The overlay renders slots 0..=max_slot
+    let total_slots = week_max_slot.map(|m| m + 1).unwrap_or(0);
 
     // Count total events for overflow
     let actual_date_events = all_day_events.len();
@@ -516,17 +521,36 @@ pub fn render_unified_events_with_selection(
     let mut col = column().spacing(DATE_EVENT_SPACING as u16);
     let mut shown = 0;
 
-    // First: render placeholders for date event slots (these align with overlay)
-    for _ in 0..total_placeholders {
+    // Track which timed events we've used
+    let mut timed_event_iter = timed_events.into_iter().peekable();
+
+    // Tetris-style rendering: for each slot position, either:
+    // - Show a placeholder if the slot is occupied by a date event (overlay renders it)
+    // - Show a timed event if slot is empty (fill the gap)
+    for slot in 0..total_slots {
         if shown >= max_visible {
             break;
         }
-        col = col.push(render_empty_slot_placeholder());
+
+        if day_occupied_slots.contains(&slot) {
+            // Slot is occupied by a date event - render placeholder
+            col = col.push(render_empty_slot_placeholder());
+        } else {
+            // Slot is empty - fill with a timed event if available
+            if let Some(event) = timed_event_iter.next() {
+                let is_selected = selected_event_uid.map_or(false, |uid| uid == event.uid);
+                let is_being_dragged = dragging_event_uid.map_or(false, |uid| uid == event.uid);
+                col = col.push(render_clickable_event_chip(event, current_date, is_selected, is_drag_active, is_being_dragged));
+            } else {
+                // No more timed events - render placeholder to maintain slot alignment
+                col = col.push(render_empty_slot_placeholder());
+            }
+        }
         shown += 1;
     }
 
-    // Second: render timed events (date-time events) below the placeholders
-    for event in timed_events {
+    // Render any remaining timed events that didn't fit in empty slots
+    for event in timed_event_iter {
         if shown >= max_visible {
             break;
         }
@@ -542,7 +566,7 @@ pub fn render_unified_events_with_selection(
         0
     };
 
-    let events = if total_placeholders > 0 || shown > total_placeholders {
+    let events = if total_slots > 0 || shown > 0 {
         Some(col.into())
     } else {
         None
@@ -590,19 +614,20 @@ fn render_compact_empty_placeholder() -> Element<'static, Message> {
 }
 
 /// Render events in compact mode (thin colored lines/dots without text)
-/// Used when cell size is too small for full event chips
+/// Used when cell size is too small for full event chips.
+/// Uses Tetris-style slot filling: timed events fill empty slots where date events aren't present.
 ///
 /// # Arguments
 /// * `events` - Events to render
 /// * `max_visible` - Maximum number of compact indicators to show
 /// * `current_date` - The date of the cell (for calculating span position)
-/// * `event_slots` - Slot assignments for date events
+/// * `day_occupied_slots` - Slots occupied by date events on THIS specific day
 /// * `week_max_slot` - Maximum slot index for the week (for consistent vertical positioning)
 pub fn render_compact_events(
     events: Vec<DisplayEvent>,
     max_visible: usize,
     _current_date: NaiveDate,
-    _event_slots: &std::collections::HashMap<String, usize>,
+    day_occupied_slots: &std::collections::HashSet<usize>,
     week_max_slot: Option<usize>,
 ) -> CompactEventsResult {
     // Separate all-day and timed events
@@ -612,8 +637,8 @@ pub fn render_compact_events(
     // Sort timed events by start time
     timed_events.sort_by(|a, b| a.start_time.cmp(&b.start_time));
 
-    // Use the week's max_slot to determine placeholder count
-    let total_placeholders = week_max_slot.map(|m| m + 1).unwrap_or(0);
+    // Calculate total slots from week_max_slot
+    let total_slots = week_max_slot.map(|m| m + 1).unwrap_or(0);
     let total_events = all_day_events.len() + timed_events.len();
     let mut shown = 0;
 
@@ -621,22 +646,41 @@ pub fn render_compact_events(
     let mut col = column().spacing(DATE_EVENT_SPACING as u16);
     let mut has_content = false;
 
-    // Render placeholders for date events (actual events are in overlay)
-    for _ in 0..total_placeholders {
+    // Track which timed events we've used
+    let mut timed_event_iter = timed_events.iter().peekable();
+
+    // Tetris-style rendering: for each slot position, either:
+    // - Show a placeholder if the slot is occupied by a date event (overlay renders it)
+    // - Show a timed event dot if slot is empty (fill the gap)
+    for slot in 0..total_slots {
         if shown >= max_visible {
             break;
         }
-        col = col.push(render_compact_empty_placeholder());
+
+        if day_occupied_slots.contains(&slot) {
+            // Slot is occupied by a date event - render placeholder
+            col = col.push(render_compact_empty_placeholder());
+        } else {
+            // Slot is empty - fill with a timed event dot if available
+            if let Some(event) = timed_event_iter.next() {
+                let color = parse_hex_color(&event.color).unwrap_or(COLOR_DEFAULT_GRAY);
+                col = col.push(render_compact_timed_indicator(color));
+            } else {
+                // No more timed events - render placeholder to maintain slot alignment
+                col = col.push(render_compact_empty_placeholder());
+            }
+        }
         shown += 1;
         has_content = true;
     }
 
-    // Render timed events as small dots in a row
-    if !timed_events.is_empty() && shown < max_visible {
+    // Render any remaining timed events as dots in a row
+    let remaining_timed: Vec<_> = timed_event_iter.collect();
+    if !remaining_timed.is_empty() && shown < max_visible {
         let mut dots_row = row().spacing(SPACING_TINY);
         let remaining_slots = max_visible - shown;
 
-        for (i, event) in timed_events.iter().enumerate() {
+        for (i, event) in remaining_timed.iter().enumerate() {
             if i >= remaining_slots {
                 break;
             }

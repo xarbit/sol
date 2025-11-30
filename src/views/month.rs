@@ -114,15 +114,26 @@ fn render_weekday_header(show_week_numbers: bool, use_short_names: bool) -> Elem
     header_row.into()
 }
 
+/// Result of computing slot assignments for a week.
+/// Contains both the event-to-slot mapping and per-day occupancy info.
+struct WeekSlotInfo {
+    /// Map of event UID -> slot index
+    slots: HashMap<String, usize>,
+    /// Occupied slots for each day (column) in the week: [day_0, day_1, ..., day_6]
+    /// Each set contains the slot indices that are occupied by date events on that day
+    day_occupied_slots: Vec<std::collections::HashSet<usize>>,
+}
+
 /// Compute slot assignments for all date events in a week using greedy interval scheduling.
-/// Returns a map of event UID -> slot index.
+/// Returns both the event-to-slot mapping and per-day slot occupancy.
 /// Both single-day and multi-day date events get slots assigned.
 /// Events are assigned to the first available slot where they don't overlap with other events.
 fn compute_week_date_event_slots(
     week: &[CalendarDay],
     events_by_date: &HashMap<NaiveDate, Vec<DisplayEvent>>,
-) -> HashMap<String, usize> {
+) -> WeekSlotInfo {
     let mut slots: HashMap<String, usize> = HashMap::new();
+    let mut slot_occupancy: Vec<std::collections::HashSet<usize>> = vec![std::collections::HashSet::new(); 7];
 
     // Get dates for this week
     let week_dates: Vec<NaiveDate> = week
@@ -131,7 +142,7 @@ fn compute_week_date_event_slots(
         .collect();
 
     if week_dates.is_empty() {
-        return slots;
+        return WeekSlotInfo { slots, day_occupied_slots: slot_occupancy };
     }
 
     let week_start = week_dates[0];
@@ -184,8 +195,6 @@ fn compute_week_date_event_slots(
 
     // Greedy interval scheduling: assign each event to the first available slot
     // Track which slots are occupied at each column: slot_occupancy[col] = set of occupied slots
-    let mut slot_occupancy: Vec<std::collections::HashSet<usize>> = vec![std::collections::HashSet::new(); 7];
-
     for (start_col, end_col, uid) in date_events {
         // Find the first slot that is free for all columns this event spans
         let mut slot = 0;
@@ -211,16 +220,16 @@ fn compute_week_date_event_slots(
         slots.insert(uid, slot);
     }
 
-    slots
+    WeekSlotInfo { slots, day_occupied_slots: slot_occupancy }
 }
 
 /// Compute slot assignments for all date events in a week (used by day_cell for placeholders).
-/// Returns a map of event UID -> slot index.
+/// Returns the full slot info including per-day occupancy for Tetris-style rendering.
 /// Uses the same greedy interval scheduling as the overlay renderer for consistency.
 fn compute_week_event_slots(
     week: &[CalendarDay],
     events_by_date: &HashMap<NaiveDate, Vec<DisplayEvent>>,
-) -> HashMap<String, usize> {
+) -> WeekSlotInfo {
     // Use the same algorithm as the overlay to ensure consistent slot assignments
     compute_week_date_event_slots(week, events_by_date)
 }
@@ -250,7 +259,7 @@ fn collect_date_event_segments(
         let week_end = week_dates[week_dates.len() - 1];
 
         // Compute slots for this week (all date events)
-        let event_slots = compute_week_date_event_slots(week, events_by_date);
+        let week_slot_info = compute_week_date_event_slots(week, events_by_date);
 
         // Find date events in this week
         let mut week_seen: std::collections::HashSet<String> = std::collections::HashSet::new();
@@ -295,7 +304,7 @@ fn collect_date_event_segments(
                     global_seen.insert(event.uid.clone(), true);
 
                     // Get slot for this event
-                    let slot = event_slots.get(&event.uid).copied().unwrap_or(0);
+                    let slot = week_slot_info.slots.get(&event.uid).copied().unwrap_or(0);
 
                     segments.push(DateEventSegment {
                         uid: event.uid.clone(),
@@ -637,9 +646,13 @@ pub fn render_month_view<'a>(
     // Use pre-calculated weeks from CalendarState cache (with adjacent month days)
     for (week_index, week) in calendar_state.weeks_full.iter().enumerate() {
         // Compute slot assignments for date events in this week
-        let event_slots = events
+        let week_slot_info = events
             .as_ref()
-            .map(|e| compute_week_event_slots(week, e.events_by_date))
+            .map(|e| compute_week_event_slots(week, e.events_by_date));
+
+        // Extract the slots map for compatibility with existing code
+        let event_slots = week_slot_info.as_ref()
+            .map(|info| info.slots.clone())
             .unwrap_or_default();
 
         // Compute the max slot for this week - all day cells need this for consistent placeholders
@@ -663,7 +676,7 @@ pub fn render_month_view<'a>(
         }
 
         // Day cells
-        for calendar_day in week {
+        for (day_col, calendar_day) in week.iter().enumerate() {
             let CalendarDay { year, month, day, is_current_month } = *calendar_day;
 
             // Check if today (need to compare full date)
@@ -737,6 +750,11 @@ pub fn render_month_view<'a>(
                 .map(|target| cell_date == Some(target))
                 .unwrap_or(false);
 
+            // Get occupied slots for this specific day (for Tetris-style rendering)
+            let day_occupied_slots = week_slot_info.as_ref()
+                .and_then(|info| info.day_occupied_slots.get(day_col).cloned())
+                .unwrap_or_default();
+
             let cell = render_day_cell_with_events(DayCellConfig {
                 year,
                 month,
@@ -748,6 +766,7 @@ pub fn render_month_view<'a>(
                 events: day_events,
                 event_slots: event_slots.clone(),
                 week_max_slot,
+                day_occupied_slots,
                 quick_event: quick_event_data,
                 is_in_selection,
                 selection_active,
