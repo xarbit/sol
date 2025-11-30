@@ -40,8 +40,7 @@ const WEEKDAY_HEADER_HEIGHT: f32 = 32.0;
 /// For multi-day events, this represents one week's portion.
 #[derive(Debug, Clone)]
 struct DateEventSegment {
-    /// Event UID (reserved for future click handling)
-    #[allow(dead_code)]
+    /// Event UID for click/drag handling
     uid: String,
     /// Event summary/title
     summary: String,
@@ -58,6 +57,8 @@ struct DateEventSegment {
     /// Whether this is the first segment (shows text)
     /// For single-day events, this is always true
     is_first_segment: bool,
+    /// The event's start date (for drag operations)
+    event_start_date: NaiveDate,
 }
 
 /// Events grouped by day for display in the month view
@@ -261,7 +262,8 @@ fn collect_date_event_segments(
                     week_seen.insert(event.uid.clone());
 
                     // Determine start/end columns for this event in this week
-                    let (start_col, end_col) = if event.is_multi_day() {
+                    // Also capture the event's start date for drag operations
+                    let (start_col, end_col, event_start_date) = if event.is_multi_day() {
                         let (Some(span_start), Some(span_end)) = (event.span_start, event.span_end) else {
                             continue;
                         };
@@ -278,10 +280,10 @@ fn collect_date_event_segments(
                         let ec = week_dates.iter()
                             .rposition(|&d| d <= span_end)
                             .unwrap_or(6);
-                        (sc, ec)
+                        (sc, ec, span_start)
                     } else {
                         // Single-day event: only spans its own column
-                        (col, col)
+                        (col, col, *date)
                     };
 
                     // Determine if this is the first segment for this event
@@ -300,6 +302,7 @@ fn collect_date_event_segments(
                         start_col,
                         end_col,
                         is_first_segment,
+                        event_start_date,
                     });
                 }
             }
@@ -320,12 +323,14 @@ fn collect_date_event_segments(
 /// * `show_week_numbers` - Whether week numbers column is visible
 /// * `compact` - If true, render thin colored lines instead of full event chips
 /// * `selected_event_uid` - Currently selected event UID for visual feedback
+/// * `event_drag_active` - Whether an event drag operation is currently active
 fn render_date_events_overlay<'a>(
     weeks: &[Vec<CalendarDay>],
     events_by_date: &HashMap<NaiveDate, Vec<DisplayEvent>>,
     show_week_numbers: bool,
     compact: bool,
     selected_event_uid: Option<&str>,
+    event_drag_active: bool,
 ) -> Option<Element<'a, Message>> {
     let segments = collect_date_event_segments(weeks, events_by_date);
 
@@ -420,6 +425,8 @@ fn render_date_events_overlay<'a>(
                             seg.start_col == 0,
                             seg.end_col == 6,
                             is_selected,
+                            seg.event_start_date,
+                            event_drag_active,
                         )
                     };
 
@@ -515,7 +522,7 @@ fn render_compact_date_event_chip(
 
 /// Render a single date event chip for the overlay.
 /// Works for both single-day and multi-day date events.
-/// Includes click handling for event selection.
+/// Includes click/drag handling for event selection and movement.
 fn render_date_event_chip(
     uid: String,
     summary: String,
@@ -524,6 +531,8 @@ fn render_date_event_chip(
     is_event_start: bool,
     is_event_end: bool,
     is_selected: bool,
+    event_start_date: NaiveDate,
+    is_drag_active: bool,
 ) -> Element<'static, Message> {
     let color = parse_hex_color(&color_hex).unwrap_or(COLOR_DEFAULT_GRAY);
 
@@ -568,11 +577,19 @@ fn render_date_event_chip(
             }
         });
 
-    // Wrap with mouse area for click handling
-    mouse_area(chip)
-        .on_press(Message::SelectEvent(uid.clone()))
-        .on_double_click(Message::OpenEditEventDialog(uid))
-        .into()
+    // Wrap with mouse area for drag and click handling
+    // Use DragEventStart on press (like timed events) - if released without moving,
+    // handle_drag_event_end will treat it as a selection click
+    let mut area = mouse_area(chip)
+        .on_press(Message::DragEventStart(uid.clone(), event_start_date))
+        .on_double_click(Message::OpenEditEventDialog(uid));
+
+    // Track mouse movement during active drag to update target
+    if is_drag_active {
+        area = area.on_enter(Message::DragEventUpdate(event_start_date));
+    }
+
+    area.into()
 }
 
 pub fn render_month_view<'a>(
@@ -738,6 +755,7 @@ pub fn render_month_view<'a>(
         let events_by_date = e.events_by_date.clone();
         let week_number_offset = if show_week_numbers { WEEK_NUMBER_WIDTH } else { 0.0 };
         let selected_uid = e.selected_event_uid.map(|s| s.to_string());
+        let event_drag_active = e.event_drag_active;
 
         let responsive_overlay = responsive(move |size: Size| {
             // Calculate approximate cell width (7 days + spacing)
@@ -758,6 +776,7 @@ pub fn render_month_view<'a>(
                 show_week_numbers,
                 compact,
                 selected_uid.as_deref(),
+                event_drag_active,
             ) {
                 overlay
             } else {
