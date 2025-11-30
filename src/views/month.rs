@@ -1,9 +1,10 @@
 use chrono::{Datelike, NaiveDate};
+use cosmic::iced::widget::stack;
 use cosmic::iced::{alignment, Length, Size};
 use cosmic::widget::{column, container, row, responsive};
 use cosmic::{widget, Element};
 
-use crate::components::{render_day_cell_with_events, DayCellConfig, DisplayEvent};
+use crate::components::{render_day_cell_with_events, render_spanning_quick_event_input, DayCellConfig, DisplayEvent};
 use crate::dialogs::ActiveDialog;
 use crate::models::CalendarDay;
 use crate::fl;
@@ -16,6 +17,9 @@ use crate::ui_constants::{
     FONT_SIZE_MEDIUM, FONT_SIZE_SMALL, PADDING_SMALL, PADDING_MONTH_GRID,
     SPACING_TINY, WEEK_NUMBER_WIDTH
 };
+
+/// Height of the spanning quick event input overlay
+const SPANNING_INPUT_HEIGHT: f32 = 36.0;
 
 /// Minimum width per day cell to use full weekday names
 /// Below this threshold, short names are used
@@ -144,19 +148,9 @@ pub fn render_month_view<'a>(
                 vec![]
             };
 
-            // Check if quick event input should be shown for this day
-            let quick_event_data: Option<(String, String)> = events.as_ref().and_then(|e| {
-                e.quick_event.as_ref().and_then(|(date, text, color)| {
-                    if date.day() == day
-                        && date.month() == month
-                        && date.year() == year
-                    {
-                        Some((text.to_string(), color.to_string()))
-                    } else {
-                        None
-                    }
-                })
-            });
+            // Quick event input is always rendered as a spanning overlay (even for single-day)
+            // This provides consistent UX for all quick event creation
+            let quick_event_data: Option<(String, String)> = None;
 
             // Check if this day is in the current drag selection range
             // Also check if there's an active multi-day quick event that includes this date
@@ -195,7 +189,160 @@ pub fn render_month_view<'a>(
         grid = grid.push(week_row);
     }
 
+    // Check if we need to render a spanning quick event overlay
+    // Used for all quick events (single-day and multi-day) for consistent UX
+    let has_spanning_overlay = events
+        .as_ref()
+        .map(|e| e.active_dialog.is_quick_event())
+        .unwrap_or(false);
+
+    if has_spanning_overlay {
+        // Get the quick event data for the overlay
+        let overlay = events.as_ref().and_then(|e| {
+            e.active_dialog.quick_event_range().map(|(start, end, text)| {
+                let color = e.quick_event
+                    .as_ref()
+                    .map(|(_, _, c)| c.to_string())
+                    .unwrap_or_else(|| "#3B82F6".to_string());
+
+                render_spanning_overlay(
+                    &calendar_state.weeks_full,
+                    start,
+                    end,
+                    text.to_string(),
+                    color,
+                    show_week_numbers,
+                )
+            })
+        });
+
+        if let Some(overlay_element) = overlay {
+            // Use stack to layer the overlay on top of the grid
+            let base = container(grid)
+                .width(Length::Fill)
+                .height(Length::Fill);
+
+            return stack![base, overlay_element].into();
+        }
+    }
+
     container(grid)
+        .width(Length::Fill)
+        .height(Length::Fill)
+        .into()
+}
+
+/// Render the spanning quick event overlay positioned over the selected date range
+fn render_spanning_overlay<'a>(
+    weeks: &[Vec<CalendarDay>],
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+    text: String,
+    calendar_color: String,
+    show_week_numbers: bool,
+) -> Element<'a, Message> {
+    // Find which week(s) the selection spans
+    let mut overlay_rows: Vec<(usize, usize, usize)> = Vec::new(); // (week_index, start_col, end_col)
+
+    for (week_idx, week) in weeks.iter().enumerate() {
+        let mut week_start_col: Option<usize> = None;
+        let mut week_end_col: Option<usize> = None;
+
+        for (day_idx, calendar_day) in week.iter().enumerate() {
+            if let Some(cell_date) = NaiveDate::from_ymd_opt(
+                calendar_day.year,
+                calendar_day.month,
+                calendar_day.day,
+            ) {
+                if cell_date >= start_date && cell_date <= end_date {
+                    if week_start_col.is_none() {
+                        week_start_col = Some(day_idx);
+                    }
+                    week_end_col = Some(day_idx);
+                }
+            }
+        }
+
+        if let (Some(start_col), Some(end_col)) = (week_start_col, week_end_col) {
+            overlay_rows.push((week_idx, start_col, end_col));
+        }
+    }
+
+    // Build the overlay structure matching the grid layout
+    let mut overlay_column = column()
+        .spacing(SPACING_TINY)
+        .padding(PADDING_MONTH_GRID);
+
+    // Add header spacer (same height as weekday header)
+    overlay_column = overlay_column.push(
+        container(widget::text(""))
+            .height(Length::Fixed(WEEKDAY_HEADER_HEIGHT))
+    );
+
+    let num_weeks = weeks.len();
+
+    for week_idx in 0..num_weeks {
+        // Check if this week has part of the selection
+        let week_overlay = overlay_rows.iter().find(|(idx, _, _)| *idx == week_idx);
+
+        if let Some((_, start_col, end_col)) = week_overlay {
+            // This week has the selection - render the spanning input
+            let mut week_row = row().spacing(SPACING_TINY).height(Length::Fill);
+
+            // Week number spacer (if enabled)
+            if show_week_numbers {
+                week_row = week_row.push(
+                    container(widget::text(""))
+                        .width(Length::Fixed(WEEK_NUMBER_WIDTH))
+                );
+            }
+
+            // Add empty spacers for columns before the selection
+            for _ in 0..*start_col {
+                week_row = week_row.push(
+                    container(widget::text(""))
+                        .width(Length::Fill)
+                );
+            }
+
+            // Calculate span (number of columns the input covers)
+            let span_columns = end_col - start_col + 1;
+
+            // Create a container that spans the selected columns
+            // We use FillPortion to make it take the right amount of space
+            let input = render_spanning_quick_event_input(
+                text.clone(),
+                calendar_color.clone(),
+                span_columns,
+            );
+
+            // Wrap in a container with the correct proportion
+            let spanning_container = container(input)
+                .width(Length::FillPortion(span_columns as u16))
+                .height(Length::Fixed(SPANNING_INPUT_HEIGHT))
+                .center_y(Length::Fixed(SPANNING_INPUT_HEIGHT));
+
+            week_row = week_row.push(spanning_container);
+
+            // Add empty spacers for columns after the selection
+            for _ in (*end_col + 1)..7 {
+                week_row = week_row.push(
+                    container(widget::text(""))
+                        .width(Length::Fill)
+                );
+            }
+
+            overlay_column = overlay_column.push(week_row);
+        } else {
+            // Empty row - just a spacer with the same height
+            overlay_column = overlay_column.push(
+                container(widget::text(""))
+                    .height(Length::Fill)
+            );
+        }
+    }
+
+    container(overlay_column)
         .width(Length::Fill)
         .height(Length::Fill)
         .into()

@@ -178,3 +178,17 @@ pub fn adjacent_month_selection_style(theme: &cosmic::Theme) -> container::Style
         ..Default::default()
     }
 }
+
+/// Style for the spanning quick event input overlay
+/// Uses calendar color with semi-transparent background
+pub fn spanning_quick_event_style(color: Color) -> container::Style {
+    container::Style {
+        background: Some(Background::Color(color.scale_alpha(0.3))),
+        border: Border {
+            color,
+            width: 2.0,
+            radius: BORDER_RADIUS.into(),
+        },
+        ..Default::default()
+    }
+}

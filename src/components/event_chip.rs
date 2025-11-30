@@ -138,6 +138,47 @@ pub fn render_quick_event_input(
         .into()
 }
 
+/// Render a spanning quick event input that covers multiple day columns
+/// Used for multi-day event creation from drag selection
+///
+/// # Arguments
+/// * `text` - Current input text
+/// * `calendar_color` - Hex color of the selected calendar
+/// * `span_columns` - Number of day columns to span (1-7)
+/// * `show_week_numbers` - Whether week numbers column is visible (affects left padding)
+pub fn render_spanning_quick_event_input(
+    text: String,
+    calendar_color: String,
+    span_columns: usize,
+) -> Element<'static, Message> {
+    let color = parse_hex_color(&calendar_color).unwrap_or(COLOR_DEFAULT_GRAY);
+
+    let input = text_input("New event...", &text)
+        .on_input(Message::QuickEventTextChanged)
+        .on_submit(Message::CommitQuickEvent)
+        .size(14)
+        .padding([6, 10])
+        .width(Length::Fill);
+
+    // The input spans across the specified number of columns
+    // We use Length::Fill and let the parent container handle the width
+    container(input)
+        .width(Length::Fill)
+        .padding([4, 6])
+        .style(move |_theme: &cosmic::Theme| {
+            container::Style {
+                background: Some(cosmic::iced::Background::Color(color.scale_alpha(0.3))),
+                border: cosmic::iced::Border {
+                    color,
+                    width: 2.0,
+                    radius: crate::ui_constants::BORDER_RADIUS.into(),
+                },
+                ..Default::default()
+            }
+        })
+        .into()
+}
+
 /// Render a column of events for a day cell (month view)
 /// All-day events are shown first as colored bars,
 /// then timed events sorted chronologically with colored dots.
