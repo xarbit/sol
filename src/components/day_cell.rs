@@ -68,6 +68,8 @@ pub struct DayCellConfig {
     pub selection_active: bool,
     /// Currently selected event UID (for visual feedback)
     pub selected_event_uid: Option<String>,
+    /// Whether an event drag operation is currently active
+    pub event_drag_active: bool,
 }
 
 /// Render a day cell with events and optional quick event input
@@ -163,6 +165,7 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
                         current_date,
                         config.week_max_slot,
                         config.selected_event_uid.as_deref(),
+                        config.event_drag_active,
                     );
 
                     // Single container for all events (placeholders + timed)
@@ -228,18 +231,25 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
 
     // Handle mouse interactions
     if let Some(date) = date {
-        // Build mouse area with drag selection support
+        // Build mouse area with drag selection and event drag support
         let mut area = mouse_area(cell_content)
-            // Start drag selection on mouse press
+            // Start drag selection on mouse press (only if not dragging an event)
             .on_press(Message::SelectionStart(date))
-            // End drag selection on mouse release
-            .on_release(Message::SelectionEnd)
             // Double-click opens quick event for single-day creation
             .on_double_click(Message::StartQuickEvent(date));
 
-        // Only track mouse movement during active selection for performance
+        // Handle release: either end selection or end event drag
+        if config.event_drag_active {
+            area = area.on_release(Message::DragEventEnd);
+        } else {
+            area = area.on_release(Message::SelectionEnd);
+        }
+
+        // Track mouse movement during active selection or event drag
         if config.selection_active {
             area = area.on_enter(Message::SelectionUpdate(date));
+        } else if config.event_drag_active {
+            area = area.on_enter(Message::DragEventUpdate(date));
         }
 
         area.into()

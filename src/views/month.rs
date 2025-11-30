@@ -72,6 +72,8 @@ pub struct MonthViewEvents<'a> {
     pub active_dialog: &'a ActiveDialog,
     /// Currently selected event UID (for visual feedback)
     pub selected_event_uid: Option<&'a str>,
+    /// Whether an event drag operation is currently active
+    pub event_drag_active: bool,
 }
 
 /// Render the weekday header row with responsive names
@@ -681,6 +683,11 @@ pub fn render_month_view<'a>(
                 .and_then(|e| e.selected_event_uid)
                 .map(|s| s.to_string());
 
+            // Check if event drag is active
+            let event_drag_active = events.as_ref()
+                .map(|e| e.event_drag_active)
+                .unwrap_or(false);
+
             let cell = render_day_cell_with_events(DayCellConfig {
                 year,
                 month,
@@ -696,6 +703,7 @@ pub fn render_month_view<'a>(
                 is_in_selection,
                 selection_active,
                 selected_event_uid,
+                event_drag_active,
             });
 
             week_row = week_row.push(

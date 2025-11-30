@@ -7,7 +7,7 @@ use crate::locale::LocalePreferences;
 use crate::menu_action::MenuAction;
 use crate::message::Message;
 use crate::models::{CalendarState, WeekState, DayState, YearState};
-use crate::selection::SelectionState;
+use crate::selection::{SelectionState, EventDragState};
 use crate::settings::AppSettings;
 use crate::views::{self, CalendarView};
 use chrono::{Datelike, NaiveDate};
@@ -124,6 +124,8 @@ pub struct CosmicCalendar {
     pub active_dialog: ActiveDialog,
     /// Drag selection state for multi-day event creation
     pub selection_state: SelectionState,
+    /// Event drag state for moving events to new dates
+    pub event_drag_state: EventDragState,
     /// Currently selected event UID (for viewing/editing/deleting)
     pub selected_event_uid: Option<String>,
 
@@ -206,6 +208,7 @@ impl CosmicCalendar {
             selected_calendar_color,
             active_dialog: ActiveDialog::None,
             selection_state: SelectionState::new(),
+            event_drag_state: EventDragState::new(),
             selected_event_uid: None,
             // Legacy field - kept because text_editor::Content doesn't implement Clone
             event_dialog: None,
@@ -321,6 +324,7 @@ impl CosmicCalendar {
             selection: &self.selection_state,
             active_dialog: &self.active_dialog,
             selected_event_uid: self.selected_event_uid.as_deref(),
+            event_drag_active: self.event_drag_state.is_active,
         };
 
         views::render_main_content(

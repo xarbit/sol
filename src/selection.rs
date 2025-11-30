@@ -162,6 +162,90 @@ impl SelectionRange {
     }
 }
 
+/// State for tracking event drag-and-drop to move events to a new date.
+///
+/// This is separate from SelectionState which is for creating new multi-day events.
+/// EventDragState tracks dragging an existing event to a new location.
+#[derive(Debug, Clone, Default)]
+pub struct EventDragState {
+    /// The UID of the event being dragged
+    pub event_uid: Option<String>,
+    /// The original start date of the event
+    pub original_date: Option<NaiveDate>,
+    /// The current target date (where the event would be dropped)
+    pub target_date: Option<NaiveDate>,
+    /// Whether a drag operation is currently active
+    pub is_active: bool,
+}
+
+impl EventDragState {
+    /// Create a new empty drag state
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Start dragging an event
+    pub fn start(&mut self, event_uid: String, original_date: NaiveDate) {
+        debug!("EventDragState: Starting drag for event {} from {}", event_uid, original_date);
+        self.event_uid = Some(event_uid);
+        self.original_date = Some(original_date);
+        self.target_date = Some(original_date);
+        self.is_active = true;
+    }
+
+    /// Update the target date during drag
+    pub fn update(&mut self, target_date: NaiveDate) {
+        if self.is_active {
+            debug!("EventDragState: Updating target to {}", target_date);
+            self.target_date = Some(target_date);
+        }
+    }
+
+    /// End the drag operation and return the move details if valid
+    /// Returns (event_uid, original_date, new_date) if a move should occur
+    pub fn end(&mut self) -> Option<(String, NaiveDate, NaiveDate)> {
+        if !self.is_active {
+            return None;
+        }
+
+        let result = match (&self.event_uid, self.original_date, self.target_date) {
+            (Some(uid), Some(original), Some(target)) if original != target => {
+                debug!("EventDragState: Ending drag - move {} from {} to {}", uid, original, target);
+                Some((uid.clone(), original, target))
+            }
+            _ => {
+                debug!("EventDragState: Ending drag - no move (same date or invalid)");
+                None
+            }
+        };
+
+        self.reset();
+        result
+    }
+
+    /// Cancel the drag operation
+    pub fn cancel(&mut self) {
+        debug!("EventDragState: Cancelling drag");
+        self.reset();
+    }
+
+    /// Reset the drag state
+    pub fn reset(&mut self) {
+        self.event_uid = None;
+        self.original_date = None;
+        self.target_date = None;
+        self.is_active = false;
+    }
+
+    /// Get the date offset (number of days to move)
+    pub fn get_offset(&self) -> Option<i64> {
+        match (self.original_date, self.target_date) {
+            (Some(original), Some(target)) => Some((target - original).num_days()),
+            _ => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -284,5 +368,90 @@ mod tests {
         assert!(!state.is_active);
         assert!(state.start_date.is_none());
         assert!(state.end_date.is_none());
+    }
+
+    // EventDragState tests
+
+    #[test]
+    fn test_event_drag_state_start() {
+        let mut state = EventDragState::new();
+        let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+
+        state.start("event-123".to_string(), date);
+
+        assert!(state.is_active);
+        assert_eq!(state.event_uid, Some("event-123".to_string()));
+        assert_eq!(state.original_date, Some(date));
+        assert_eq!(state.target_date, Some(date));
+    }
+
+    #[test]
+    fn test_event_drag_state_update() {
+        let mut state = EventDragState::new();
+        let original = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+        let target = NaiveDate::from_ymd_opt(2024, 1, 18).unwrap();
+
+        state.start("event-123".to_string(), original);
+        state.update(target);
+
+        assert!(state.is_active);
+        assert_eq!(state.original_date, Some(original));
+        assert_eq!(state.target_date, Some(target));
+    }
+
+    #[test]
+    fn test_event_drag_state_end_with_move() {
+        let mut state = EventDragState::new();
+        let original = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+        let target = NaiveDate::from_ymd_opt(2024, 1, 18).unwrap();
+
+        state.start("event-123".to_string(), original);
+        state.update(target);
+        let result = state.end();
+
+        assert!(!state.is_active);
+        assert!(result.is_some());
+        let (uid, orig, tgt) = result.unwrap();
+        assert_eq!(uid, "event-123");
+        assert_eq!(orig, original);
+        assert_eq!(tgt, target);
+    }
+
+    #[test]
+    fn test_event_drag_state_end_same_date() {
+        let mut state = EventDragState::new();
+        let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+
+        state.start("event-123".to_string(), date);
+        // Don't update - target stays same as original
+        let result = state.end();
+
+        assert!(!state.is_active);
+        assert!(result.is_none()); // No move needed
+    }
+
+    #[test]
+    fn test_event_drag_state_get_offset() {
+        let mut state = EventDragState::new();
+        let original = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+        let target = NaiveDate::from_ymd_opt(2024, 1, 18).unwrap();
+
+        state.start("event-123".to_string(), original);
+        state.update(target);
+
+        assert_eq!(state.get_offset(), Some(3)); // 3 days forward
+    }
+
+    #[test]
+    fn test_event_drag_state_cancel() {
+        let mut state = EventDragState::new();
+        let date = NaiveDate::from_ymd_opt(2024, 1, 15).unwrap();
+
+        state.start("event-123".to_string(), date);
+        assert!(state.is_active);
+
+        state.cancel();
+        assert!(!state.is_active);
+        assert!(state.event_uid.is_none());
     }
 }

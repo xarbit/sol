@@ -90,6 +90,16 @@ pub enum Message {
     /// Select an event (single click) for viewing/editing
     SelectEvent(String),
 
+    // Event drag-and-drop
+    /// Start dragging an event to move it (uid, original_date)
+    DragEventStart(String, NaiveDate),
+    /// Update the drag target date as user drags over cells
+    DragEventUpdate(NaiveDate),
+    /// End the drag operation (drop the event)
+    DragEventEnd,
+    /// Cancel the drag operation
+    DragEventCancel,
+
     // Event management - Event dialog
     /// Open the event dialog for creating a new event
     OpenNewEventDialog,

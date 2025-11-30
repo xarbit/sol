@@ -199,17 +199,19 @@ pub fn render_event_chip(event: DisplayEvent, current_date: NaiveDate) -> Elemen
     }
 }
 
-/// Render a clickable event chip with selection state
-/// Wraps the event chip with mouse interaction for selection
+/// Render a clickable event chip with selection state and drag support
+/// Wraps the event chip with mouse interaction for selection and dragging
 ///
 /// # Arguments
 /// * `event` - The display event with span metadata
 /// * `current_date` - The date of the cell being rendered
 /// * `is_selected` - Whether this event is currently selected
+/// * `is_drag_active` - Whether any event drag is currently active
 pub fn render_clickable_event_chip(
     event: DisplayEvent,
     current_date: NaiveDate,
     is_selected: bool,
+    is_drag_active: bool,
 ) -> Element<'static, Message> {
     let uid = event.uid.clone();
     let color = parse_hex_color(&event.color).unwrap_or(COLOR_DEFAULT_GRAY);
@@ -221,11 +223,20 @@ pub fn render_clickable_event_chip(
         render_timed_event_chip_selectable(event.summary, event.start_time, color, is_selected)
     };
 
-    // Wrap with mouse area for click handling
-    mouse_area(chip)
-        .on_press(Message::SelectEvent(uid.clone()))
-        .on_double_click(Message::OpenEditEventDialog(uid))
-        .into()
+    // Wrap with mouse area for click/drag handling
+    // - on_press: Start drag (will be resolved as select or move on release)
+    // - on_release: End drag (handled at day cell level)
+    // - on_double_click: Open edit dialog
+    let mut area = mouse_area(chip)
+        .on_press(Message::DragEventStart(uid.clone(), current_date))
+        .on_double_click(Message::OpenEditEventDialog(uid));
+
+    // Only track mouse enter during active drag for performance
+    if is_drag_active {
+        area = area.on_enter(Message::DragEventUpdate(current_date));
+    }
+
+    area.into()
 }
 
 /// Render an all-day event chip with selection highlight
@@ -442,7 +453,7 @@ pub fn render_unified_events(
     current_date: NaiveDate,
     week_max_slot: Option<usize>,
 ) -> UnifiedEventsResult {
-    render_unified_events_with_selection(events, max_visible, current_date, week_max_slot, None)
+    render_unified_events_with_selection(events, max_visible, current_date, week_max_slot, None, false)
 }
 
 /// Render events as a unified column with selection support.
@@ -460,6 +471,7 @@ pub fn render_unified_events_with_selection(
     current_date: NaiveDate,
     week_max_slot: Option<usize>,
     selected_event_uid: Option<&str>,
+    is_drag_active: bool,
 ) -> UnifiedEventsResult {
     // Separate all-day and timed events
     let (all_day_events, mut timed_events): (Vec<_>, Vec<_>) =
@@ -495,7 +507,7 @@ pub fn render_unified_events_with_selection(
             break;
         }
         let is_selected = selected_event_uid.map_or(false, |uid| uid == event.uid);
-        col = col.push(render_clickable_event_chip(event, current_date, is_selected));
+        col = col.push(render_clickable_event_chip(event, current_date, is_selected, is_drag_active));
         shown += 1;
     }
 
