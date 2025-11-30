@@ -46,6 +46,9 @@ const APP_NAME: &str = "sol-calendar";
 /// This should be called once at application startup, before any logging occurs.
 /// The log level is controlled by the `RUST_LOG` environment variable.
 ///
+/// By default, third-party libraries (wgpu, cosmic, iced, etc.) are set to `warn`
+/// level to reduce log noise, while the application itself uses `info` level.
+///
 /// # Example
 ///
 /// ```rust
@@ -54,9 +57,22 @@ const APP_NAME: &str = "sol-calendar";
 ///     log::info!("Application started");
 /// }
 /// ```
+///
+/// # Customizing Log Levels
+///
+/// Override with RUST_LOG:
+/// - `RUST_LOG=debug` - Debug for everything (very verbose)
+/// - `RUST_LOG=sol_calendar=debug` - Debug for app only
+/// - `RUST_LOG=sol_calendar=debug,wgpu=error` - Debug app, silence wgpu
 pub fn init() {
+    // Default filter: app at info, noisy libraries at warn/error
+    let default_filter = format!(
+        "{level},wgpu_core=error,wgpu_hal=error,cosmic=warn,iced=warn,winit=warn,calloop=warn,sctk=warn",
+        level = DEFAULT_LOG_LEVEL
+    );
+
     env_logger::Builder::from_env(
-        env_logger::Env::default().default_filter_or(DEFAULT_LOG_LEVEL)
+        env_logger::Env::default().default_filter_or(&default_filter)
     )
     .format_timestamp_millis()
     .format_module_path(true)
