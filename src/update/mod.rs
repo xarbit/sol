@@ -66,28 +66,40 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
 
         // === View Navigation ===
         Message::ChangeView(view) => {
+            // Dismiss empty quick event when changing views (focus loss)
+            DialogManager::dismiss_empty_quick_event(&mut app.active_dialog);
             // When changing views, sync views to the selected_date so the new view
             // shows the period containing the anchor date
             app.current_view = view;
             app.sync_views_to_selected_date();
         }
         Message::PreviousPeriod => {
+            // Dismiss empty quick event when navigating (focus loss)
+            DialogManager::dismiss_empty_quick_event(&mut app.active_dialog);
             handle_previous_period(app);
         }
         Message::NextPeriod => {
+            // Dismiss empty quick event when navigating (focus loss)
+            DialogManager::dismiss_empty_quick_event(&mut app.active_dialog);
             handle_next_period(app);
         }
         Message::Today => {
+            // Dismiss empty quick event when navigating to today (focus loss)
+            DialogManager::dismiss_empty_quick_event(&mut app.active_dialog);
             // Today button navigates to today in all views
             app.navigate_to_today();
         }
         Message::SelectDay(year, month, day) => {
+            // Dismiss empty quick event when clicking on a day (focus loss)
+            DialogManager::dismiss_empty_quick_event(&mut app.active_dialog);
             // Set the selected date - this syncs all views automatically
             if let Some(date) = NaiveDate::from_ymd_opt(year, month, day) {
                 app.set_selected_date(date);
             }
         }
         Message::SelectDayNoNavigate(date) => {
+            // Dismiss empty quick event when clicking on a day (focus loss)
+            DialogManager::dismiss_empty_quick_event(&mut app.active_dialog);
             // Set selected date without navigating (for adjacent month days)
             // Only updates the selected_date, doesn't sync views to that date's month
             app.selected_date = date;

@@ -147,8 +147,6 @@ pub struct CosmicCalendar {
     pub key_binds: HashMap<menu::KeyBind, MenuAction>,
     /// The currently selected calendar for new events (calendar id)
     pub selected_calendar_id: Option<String>,
-    /// Quick event being edited: (date, event_text) - None when not editing
-    pub quick_event_editing: Option<(NaiveDate, String)>,
     /// Cached events for current month view, grouped by date (supports adjacent months)
     pub cached_month_events: std::collections::HashMap<chrono::NaiveDate, Vec<crate::components::DisplayEvent>>,
     /// Color of the selected calendar (cached for quick event input)
@@ -240,7 +238,6 @@ impl CosmicCalendar {
             about,
             key_binds,
             selected_calendar_id,
-            quick_event_editing: None,
             cached_month_events,
             selected_calendar_color,
             active_dialog: ActiveDialog::None,
@@ -350,10 +347,10 @@ impl CosmicCalendar {
 
     /// Render the main content area (toolbar + calendar view)
     pub fn render_main_content(&self) -> Element<'_, Message> {
-        // Build month events with quick event state if editing
-        let quick_event_data: Option<(chrono::NaiveDate, &str, &str)> = self.quick_event_editing
-            .as_ref()
-            .map(|(date, text)| (*date, text.as_str(), self.selected_calendar_color.as_str()));
+        // Build month events with quick event state if editing (from DialogManager)
+        let quick_event_data: Option<(chrono::NaiveDate, &str, &str)> = self.active_dialog
+            .quick_event_data()
+            .map(|(date, text)| (date, text, self.selected_calendar_color.as_str()));
 
         let month_events = views::MonthViewEvents {
             events_by_date: &self.cached_month_events,

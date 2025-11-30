@@ -10,14 +10,21 @@ use uuid::Uuid;
 
 use crate::app::{CosmicCalendar, EventDialogState};
 use crate::caldav::{AlertTime, CalendarEvent, RepeatFrequency, TravelTime};
+use crate::dialogs::{DialogAction, DialogManager, QuickEventResult};
 use crate::services::EventHandler;
 
 /// Commit the quick event being edited - create a new event in the selected calendar
+/// Uses DialogManager to get the event data from ActiveDialog::QuickEvent
 pub fn handle_commit_quick_event(app: &mut CosmicCalendar) {
     debug!("handle_commit_quick_event: Starting");
 
-    // Get the event data and clear the editing state
-    let Some((date, text)) = app.quick_event_editing.take() else {
+    // Get the event data from DialogManager and clear the dialog state
+    let result = DialogManager::handle_action(
+        &mut app.active_dialog,
+        DialogAction::CommitQuickEvent,
+    );
+
+    let Some(QuickEventResult { date, text }) = result else {
         debug!("handle_commit_quick_event: No quick event editing state");
         return;
     };
@@ -86,22 +93,23 @@ pub fn handle_delete_event(app: &mut CosmicCalendar, uid: String) {
 }
 
 /// Start editing a quick event on a specific date
+/// Uses DialogManager to open ActiveDialog::QuickEvent
 pub fn handle_start_quick_event(app: &mut CosmicCalendar, date: NaiveDate) {
     debug!("handle_start_quick_event: Starting quick event for {}", date);
-    app.quick_event_editing = Some((date, String::new()));
+    DialogManager::handle_action(&mut app.active_dialog, DialogAction::StartQuickEvent(date));
 }
 
 /// Update the quick event text while editing
+/// Uses DialogManager to update the text in ActiveDialog::QuickEvent
 pub fn handle_quick_event_text_changed(app: &mut CosmicCalendar, text: String) {
-    if let Some((date, _)) = app.quick_event_editing.take() {
-        app.quick_event_editing = Some((date, text));
-    }
+    DialogManager::handle_action(&mut app.active_dialog, DialogAction::QuickEventTextChanged(text));
 }
 
 /// Cancel quick event editing
+/// Uses DialogManager to close the ActiveDialog::QuickEvent
 pub fn handle_cancel_quick_event(app: &mut CosmicCalendar) {
     debug!("handle_cancel_quick_event: Cancelling");
-    app.quick_event_editing = None;
+    DialogManager::close(&mut app.active_dialog);
 }
 
 // === Event Dialog Handlers ===
