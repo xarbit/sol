@@ -50,7 +50,7 @@ This project is in **active development**. The UI foundation is in place, but co
   - All-day events section at the top
   - Drag-and-drop event rescheduling
 - **Day View**: Single day detailed schedule with hourly breakdown
-- **Year View**: 12-month overview in 3×4 grid (Apple Calendar style)
+- **Year View**: 12-month overview in 3×4 grid
 
 #### Event Management
 - Quick event creation via click or keyboard
