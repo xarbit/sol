@@ -217,3 +217,75 @@ pub fn render_events_column(
 
     col.into()
 }
+
+/// Result of splitting events into all-day and timed categories
+pub struct SplitEventsResult {
+    /// All-day events column (edge-to-edge, no margin)
+    pub all_day: Option<Element<'static, Message>>,
+    /// Timed events column (with spacing/margin)
+    pub timed: Option<Element<'static, Message>>,
+    /// Number of events not shown (for "+N more" indicator)
+    pub overflow_count: usize,
+}
+
+/// Render events split into two separate containers:
+/// - All-day events: edge-to-edge colored bars (no margin)
+/// - Timed events: dot + time format with margin/spacing
+///
+/// This allows different visual treatment for each event type in day cells.
+pub fn render_split_events(
+    events: Vec<DisplayEvent>,
+    max_visible: usize,
+) -> SplitEventsResult {
+    // Separate all-day and timed events
+    let (all_day_events, mut timed_events): (Vec<_>, Vec<_>) =
+        events.into_iter().partition(|e| e.all_day);
+
+    // Sort timed events by start time
+    timed_events.sort_by(|a, b| a.start_time.cmp(&b.start_time));
+
+    let total_events = all_day_events.len() + timed_events.len();
+    let mut shown = 0;
+
+    // Render all-day events (no spacing between them for seamless look)
+    let all_day = if !all_day_events.is_empty() {
+        let mut col = column().spacing(SPACING_TINY);
+        for event in all_day_events {
+            if shown >= max_visible {
+                break;
+            }
+            col = col.push(render_event_chip(event));
+            shown += 1;
+        }
+        Some(col.into())
+    } else {
+        None
+    };
+
+    // Render timed events
+    let timed = if !timed_events.is_empty() && shown < max_visible {
+        let mut col = column().spacing(SPACING_TINY);
+        for event in timed_events {
+            if shown >= max_visible {
+                break;
+            }
+            col = col.push(render_event_chip(event));
+            shown += 1;
+        }
+        Some(col.into())
+    } else {
+        None
+    };
+
+    let overflow_count = if total_events > max_visible {
+        total_events - max_visible
+    } else {
+        0
+    };
+
+    SplitEventsResult {
+        all_day,
+        timed,
+        overflow_count,
+    }
+}

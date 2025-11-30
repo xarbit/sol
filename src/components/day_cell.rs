@@ -3,7 +3,7 @@ use cosmic::iced::{alignment, Length};
 use cosmic::widget::{column, container, mouse_area};
 use cosmic::{widget, Element};
 
-use crate::components::{render_events_column, render_quick_event_input, DisplayEvent};
+use crate::components::{render_split_events, render_quick_event_input, DisplayEvent};
 use crate::message::Message;
 use crate::styles::{
     today_circle_style, selected_day_style, day_cell_style, adjacent_month_day_style,
@@ -14,9 +14,13 @@ use crate::ui_constants::{PADDING_DAY_CELL, SPACING_TINY, SPACING_SMALL};
 /// Size of the circle behind today's day number
 const TODAY_CIRCLE_SIZE: f32 = 32.0;
 
+/// Vertical-only padding for day cells (all-day events need edge-to-edge)
+const PADDING_DAY_CELL_VERTICAL: [u16; 4] = [PADDING_DAY_CELL[0], 0, PADDING_DAY_CELL[2], 0];
+
 /// Apply the appropriate style to a day cell container based on state
 /// Today no longer gets special cell styling - the circle is on the day number
 /// Selected gets a border, drag selection gets highlight, regular cells get weekend background
+/// Uses vertical-only padding so all-day events can span edge-to-edge
 fn apply_day_cell_style<'a>(
     content: impl Into<Element<'a, Message>>,
     is_selected: bool,
@@ -24,7 +28,7 @@ fn apply_day_cell_style<'a>(
     is_weekend: bool,
 ) -> container::Container<'a, Message, cosmic::Theme> {
     let base = container(content)
-        .padding(PADDING_DAY_CELL)
+        .padding(PADDING_DAY_CELL_VERTICAL) // Vertical padding only, horizontal handled per-element
         .width(Length::Fill)
         .height(Length::Fill);
 
@@ -77,9 +81,10 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
         widget::text(config.day.to_string()).into()
     };
 
-    // Right-align the day number
+    // Right-align the day number with horizontal padding
     let header = container(day_number)
         .width(Length::Fill)
+        .padding([0, PADDING_DAY_CELL[1], 0, PADDING_DAY_CELL[3]]) // horizontal padding for header
         .align_x(alignment::Horizontal::Right);
 
     // Build content with day number at top
@@ -88,49 +93,69 @@ pub fn render_day_cell_with_events(config: DayCellConfig) -> Element<'static, Me
         .width(Length::Fill)
         .push(header);
 
-    // Events section in its own container
+    // Events section - split into all-day (edge-to-edge) and timed (with padding)
     let has_events = !config.events.is_empty() || config.quick_event.is_some();
     if has_events {
-        let mut events_content = column()
-            .spacing(SPACING_TINY)
-            .width(Length::Fill);
-
         // Show quick event input if editing on this day
         if let Some((text, color)) = config.quick_event {
-            events_content = events_content.push(render_quick_event_input(text, color));
+            let quick_event_container = container(render_quick_event_input(text, color))
+                .width(Length::Fill);
+            content = content.push(quick_event_container);
         }
 
         // Show existing events (max 3 visible in month view)
         if !config.events.is_empty() {
-            events_content = events_content.push(render_events_column(config.events, 3));
+            let split_events = render_split_events(config.events, 3);
+
+            // All-day events: edge-to-edge, no horizontal padding
+            if let Some(all_day) = split_events.all_day {
+                let all_day_container = container(all_day)
+                    .width(Length::Fill)
+                    .clip(true);
+                content = content.push(all_day_container);
+            }
+
+            // Timed events: with horizontal padding for indentation
+            if let Some(timed) = split_events.timed {
+                let timed_container = container(timed)
+                    .width(Length::Fill)
+                    .padding([0, PADDING_DAY_CELL[1], 0, PADDING_DAY_CELL[3]]) // horizontal padding only
+                    .clip(true);
+                content = content.push(timed_container);
+            }
+
+            // Show "+N more" if there are hidden events
+            if split_events.overflow_count > 0 {
+                content = content.push(
+                    container(
+                        widget::text(format!("+{} more", split_events.overflow_count))
+                            .size(10)
+                    )
+                    .padding([0, PADDING_DAY_CELL[1], 0, PADDING_DAY_CELL[3]]) // horizontal padding only
+                );
+            }
         }
-
-        // Wrap events in a clipping container to prevent overflow
-        let events_container = container(events_content)
-            .width(Length::Fill)
-            .clip(true);
-
-        content = content.push(events_container);
     }
 
     // Build styled container based on state
     let styled_container = if config.is_adjacent_month {
         // Adjacent month: grayed out style, but show selection/highlight if applicable
+        // Uses vertical-only padding so all-day events can span edge-to-edge
         if config.is_selected {
             container(content)
-                .padding(PADDING_DAY_CELL)
+                .padding(PADDING_DAY_CELL_VERTICAL)
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .style(|theme: &cosmic::Theme| adjacent_month_selected_style(theme))
         } else if config.is_in_selection {
             container(content)
-                .padding(PADDING_DAY_CELL)
+                .padding(PADDING_DAY_CELL_VERTICAL)
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .style(|theme: &cosmic::Theme| adjacent_month_selection_style(theme))
         } else {
             container(content)
-                .padding(PADDING_DAY_CELL)
+                .padding(PADDING_DAY_CELL_VERTICAL)
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .style(|_theme: &cosmic::Theme| adjacent_month_day_style())
