@@ -2,7 +2,7 @@
 //!
 //! Contains functions for rendering date event chips in the overlay.
 
-use chrono::NaiveDate;
+use chrono::{Local, NaiveDate};
 use cosmic::iced::widget::text::Wrapping;
 use cosmic::iced::Length;
 use cosmic::widget::{container, mouse_area};
@@ -45,6 +45,7 @@ pub fn render_compact_date_event_chip(
 /// Render a single date event chip for the overlay.
 /// Works for both single-day and multi-day date events.
 /// Includes click/drag handling for event selection and movement.
+/// Events on past dates are rendered with reduced opacity.
 pub fn render_date_event_chip(
     uid: String,
     summary: String,
@@ -56,6 +57,7 @@ pub fn render_date_event_chip(
     event_start_date: NaiveDate,
     is_drag_active: bool,
     is_being_dragged: bool,
+    event_date: NaiveDate,
 ) -> Element<'static, Message> {
     let color = parse_color_safe(&color_hex);
 
@@ -76,8 +78,12 @@ pub fn render_date_event_chip(
             .into()
     };
 
-    // Dim opacity when being dragged to show it's in motion
-    let opacity = ChipOpacity::from_state(is_selected, is_being_dragged);
+    // Check if this event is in the past (before today)
+    let today = Local::now().date_naive();
+    let is_past = event_date < today;
+
+    // Dim opacity when being dragged or for past events
+    let opacity = ChipOpacity::from_state_with_past(is_selected, is_being_dragged, is_past);
 
     let chip = container(content)
         .padding([2, 4, 2, 4])

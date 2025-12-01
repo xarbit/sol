@@ -48,6 +48,8 @@ pub struct DateEventSegment {
     pub is_first_segment: bool,
     /// The event's start date (for drag operations)
     pub event_start_date: NaiveDate,
+    /// The date of the last day this segment covers (used for past event dimming)
+    pub segment_end_date: NaiveDate,
 }
 
 /// Result of computing slot assignments for a week.
@@ -242,6 +244,9 @@ pub fn collect_date_event_segments(
                     // Get slot for this event
                     let slot = week_slot_info.slots.get(&event.uid).copied().unwrap_or(0);
 
+                    // Get the actual date for the segment's end column (used for past event dimming)
+                    let segment_end_date = week_dates[end_col];
+
                     segments.push(DateEventSegment {
                         uid: event.uid.clone(),
                         summary: event.summary.clone(),
@@ -252,6 +257,7 @@ pub fn collect_date_event_segments(
                         end_col,
                         is_first_segment,
                         event_start_date,
+                        segment_end_date,
                     });
                 }
             }
@@ -371,6 +377,7 @@ pub fn render_date_events_overlay<'a>(
                             seg.event_start_date,
                             event_drag_active,
                             is_being_dragged,
+                            seg.segment_end_date,
                         )
                     };
 

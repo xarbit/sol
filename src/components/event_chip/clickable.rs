@@ -2,7 +2,7 @@
 //!
 //! Wraps event chips with mouse interaction for selection and dragging.
 
-use chrono::NaiveDate;
+use chrono::{Local, NaiveDate};
 use cosmic::widget::mouse_area;
 use cosmic::Element;
 
@@ -25,12 +25,41 @@ use super::types::{ChipSelectionState, DisplayEvent};
 pub fn render_event_chip(event: DisplayEvent, current_date: NaiveDate) -> Element<'static, Message> {
     let color = parse_hex_color(&event.color).unwrap_or(COLOR_DEFAULT_GRAY);
 
+    // Check if this event is in the past
+    let is_past = is_event_past(&event, current_date);
+
     if event.all_day {
         // Calculate span position for multi-day events
         let span_position = event.span_position_for_date(current_date);
         render_all_day_chip(event.summary, color, span_position, None)
     } else {
-        render_timed_event_chip(event.summary, event.start_time, color, None)
+        render_timed_event_chip(event.summary, event.start_time, color, None, is_past)
+    }
+}
+
+/// Check if a timed event is in the past (considers time on today)
+fn is_event_past(event: &DisplayEvent, current_date: NaiveDate) -> bool {
+    let now = Local::now();
+    let today = now.date_naive();
+
+    if current_date < today {
+        // Past day - always dim
+        true
+    } else if current_date == today && !event.all_day {
+        // Today's timed event - check if event end time has passed
+        if let Some(end_time) = event.end_time {
+            let current_time = now.time();
+            end_time <= current_time
+        } else if let Some(start_time) = event.start_time {
+            // No end time - use start time as heuristic
+            let current_time = now.time();
+            start_time <= current_time
+        } else {
+            false
+        }
+    } else {
+        // Future day or all-day event on today
+        false
     }
 }
 
@@ -56,13 +85,16 @@ pub fn render_clickable_event_chip(
     let drag_summary = event.summary.clone();
     let drag_color = event.color.clone();
 
+    // Check if this event is in the past
+    let is_past = is_event_past(&event, current_date);
+
     let selection = Some(ChipSelectionState::new(is_selected, is_being_dragged));
 
     let chip = if event.all_day {
         let span_position = event.span_position_for_date(current_date);
         render_all_day_chip(event.summary, color, span_position, selection)
     } else {
-        render_timed_event_chip(event.summary, event.start_time, color, selection)
+        render_timed_event_chip(event.summary, event.start_time, color, selection, is_past)
     };
 
     // Wrap with mouse area for click/drag handling

@@ -69,6 +69,9 @@ pub struct ChipOpacity {
     pub text: f32,
 }
 
+/// Multiplier for dimming past events (applied to both background and text)
+const PAST_EVENT_DIM_FACTOR: f32 = 0.5;
+
 impl ChipOpacity {
     /// Calculate opacity values based on selection and drag state.
     /// - Dragging: very dim background (0.15), dim text (0.4) to show event is "in flight"
@@ -86,10 +89,33 @@ impl ChipOpacity {
         Self { background, text }
     }
 
+    /// Calculate opacity values for past events (dimmed to reduce visual prominence).
+    /// Past events are shown with reduced opacity to help focus on upcoming events.
+    pub fn from_state_with_past(is_selected: bool, is_being_dragged: bool, is_past: bool) -> Self {
+        let mut opacity = Self::from_state(is_selected, is_being_dragged);
+        if is_past {
+            opacity.background *= PAST_EVENT_DIM_FACTOR;
+            opacity.text *= PAST_EVENT_DIM_FACTOR;
+        }
+        opacity
+    }
+
     /// Calculate opacity for a dot/indicator element during drag.
     /// Dots don't have selection state, only drag state.
     pub fn dot_opacity(is_being_dragged: bool) -> f32 {
         if is_being_dragged { 0.3 } else { 1.0 }
+    }
+
+    /// Get background opacity for week/day view timed events.
+    /// Returns (background_opacity, border_width) tuple.
+    pub fn timed_event_opacity(is_selected: bool, is_past: bool) -> (f32, f32) {
+        let (base_bg, border) = if is_selected {
+            (0.9, 2.0)
+        } else {
+            (0.85, 0.0)
+        };
+        let bg = if is_past { base_bg * PAST_EVENT_DIM_FACTOR } else { base_bg };
+        (bg, border)
     }
 }
 

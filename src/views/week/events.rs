@@ -2,12 +2,12 @@
 //!
 //! Contains timed event chip rendering and event overlay positioning.
 
-use chrono::{NaiveDate, Timelike};
+use chrono::{Local, NaiveDate, Timelike};
 use cosmic::iced::{Background, Border, Length};
 use cosmic::widget::{column, container, mouse_area, row};
 use cosmic::{widget, Element};
 
-use crate::components::{parse_color_safe, DisplayEvent};
+use crate::components::{parse_color_safe, ChipOpacity, DisplayEvent};
 use crate::components::spacer::vertical_spacer;
 use crate::message::Message;
 use crate::ui_constants::{HOUR_ROW_HEIGHT, BORDER_RADIUS};
@@ -97,11 +97,30 @@ fn render_positioned_event_block(
     let uid = event.uid.clone();
     let is_selected = selected_event_uid == Some(&event.uid);
 
-    let (bg_opacity, border_width) = if is_selected {
-        (0.9, 2.0)
+    // Check if this event is in the past (considering time on today)
+    let now = Local::now();
+    let today = now.date_naive();
+    let is_past = if date < today {
+        // Past day - always dim
+        true
+    } else if date == today {
+        // Today - check if event end time has passed
+        if let Some(end_time) = event.end_time {
+            let current_time = now.time();
+            end_time <= current_time
+        } else if let Some(start_time) = event.start_time {
+            // No end time - use start time + 1 hour as heuristic
+            let current_time = now.time();
+            start_time <= current_time
+        } else {
+            false
+        }
     } else {
-        (0.85, 0.0)
+        // Future day - not dim
+        false
     };
+
+    let (bg_opacity, border_width) = ChipOpacity::timed_event_opacity(is_selected, is_past);
 
     // Build the label with time and summary
     let time_str = event.start_time

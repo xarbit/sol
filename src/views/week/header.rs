@@ -2,13 +2,13 @@
 //!
 //! Contains day header row and all-day events section rendering.
 
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, Local, NaiveDate};
 use cosmic::iced::{alignment, Background, Border, Length};
 use cosmic::widget::{column, container, mouse_area, row};
 use cosmic::{widget, Element};
 use std::collections::HashMap;
 
-use crate::components::{parse_color_safe, DisplayEvent};
+use crate::components::{parse_color_safe, ChipOpacity, DisplayEvent};
 use crate::components::spacer::fixed_spacer;
 use crate::locale::LocalePreferences;
 use crate::localized_names;
@@ -160,17 +160,17 @@ fn render_all_day_section<'a>(
 fn render_all_day_events_for_day(date: NaiveDate, events: &[DisplayEvent], selected_event_uid: Option<&str>) -> Element<'static, Message> {
     let mut col = column().spacing(ALL_DAY_SPACING as u16);
 
+    // Check if this date is in the past (all-day events are past at end of day)
+    let today = Local::now().date_naive();
+    let is_past = date < today; // All-day events don't have time - check by day
+
     for event in events {
         let color = parse_color_safe(&event.color);
         let uid = event.uid.clone();
         let is_selected = selected_event_uid == Some(&event.uid);
 
-        // Selection highlight
-        let (bg_opacity, border_width) = if is_selected {
-            (0.9, 2.0)
-        } else {
-            (0.85, 0.0)
-        };
+        // Selection highlight with past event dimming
+        let (bg_opacity, border_width) = ChipOpacity::timed_event_opacity(is_selected, is_past);
 
         let chip = container(
             widget::text(event.summary.clone())
