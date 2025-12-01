@@ -130,3 +130,33 @@ pub fn render_delete_calendar_dialog(active_dialog: &ActiveDialog) -> Element<'_
         .width(Length::Fixed(400.0))
         .into()
 }
+
+/// Render the delete event confirmation dialog using COSMIC dialog widget
+/// Takes the active dialog state which should be EventDelete variant
+pub fn render_delete_event_dialog(active_dialog: &ActiveDialog) -> Element<'_, Message> {
+    // Extract event data from active_dialog
+    let (event_name, is_recurring) = match active_dialog {
+        ActiveDialog::EventDelete { event_name, is_recurring, .. } => (event_name.as_str(), *is_recurring),
+        _ => return widget::text("").into(), // Should not happen
+    };
+
+    // Build dialog body message
+    let body_message = if is_recurring {
+        fl!("dialog-delete-event-recurring-message", name = event_name.to_string())
+    } else {
+        fl!("dialog-delete-event-message", name = event_name.to_string())
+    };
+
+    // Use COSMIC's dialog widget with proper styling
+    dialog()
+        .title(fl!("dialog-delete-event-title"))
+        .body(body_message)
+        .secondary_action(
+            button::text(fl!("button-cancel")).on_press(Message::CancelDeleteEvent),
+        )
+        .primary_action(
+            button::destructive(fl!("button-delete")).on_press(Message::ConfirmDeleteEvent),
+        )
+        .width(Length::Fixed(400.0))
+        .into()
+}

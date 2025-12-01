@@ -82,6 +82,17 @@ pub enum ActiveDialog {
         calendar_id: String,
         calendar_name: String,
     },
+    /// Delete event confirmation dialog
+    EventDelete {
+        /// Event UID to delete
+        event_uid: String,
+        /// Event name for display in confirmation
+        event_name: String,
+        /// Whether this is a recurring event
+        is_recurring: bool,
+        /// For recurring events: delete all occurrences (true) or just this one (false)
+        delete_all_occurrences: bool,
+    },
     /// Event dialog is open (state managed by legacy field)
     /// This variant exists to track that an event dialog is open,
     /// but the actual data is in `app.event_dialog`
@@ -124,6 +135,23 @@ impl ActiveDialog {
     #[allow(dead_code)] // Reserved for future dialog type checking
     pub fn is_event_dialog(&self) -> bool {
         matches!(self, ActiveDialog::EventDialogOpen)
+    }
+
+    /// Check if this is an event delete confirmation dialog
+    #[allow(dead_code)] // Reserved for future dialog type checking
+    pub fn is_event_delete(&self) -> bool {
+        matches!(self, ActiveDialog::EventDelete { .. })
+    }
+
+    /// Get event delete data if this is an event delete dialog
+    /// Returns (event_uid, event_name, is_recurring, delete_all_occurrences)
+    pub fn event_delete_data(&self) -> Option<(&str, &str, bool, bool)> {
+        match self {
+            ActiveDialog::EventDelete { event_uid, event_name, is_recurring, delete_all_occurrences } => {
+                Some((event_uid, event_name, *is_recurring, *delete_all_occurrences))
+            }
+            _ => None,
+        }
     }
 
     /// Get the color picker calendar ID if open

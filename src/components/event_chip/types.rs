@@ -108,12 +108,15 @@ impl ChipOpacity {
 
     /// Get background opacity for week/day view timed events.
     /// Returns (background_opacity, border_width) tuple.
+    /// All timed events have some transparency for a softer look.
+    /// Past events are more transparent to reduce visual prominence.
     pub fn timed_event_opacity(is_selected: bool, is_past: bool) -> (f32, f32) {
         let (base_bg, border) = if is_selected {
-            (0.9, 2.0)
+            (0.8, 2.0)  // Selected: slightly more opaque
         } else {
-            (0.85, 0.0)
+            (0.7, 0.0)  // Normal: transparent for softer look
         };
+        // Past events get additional dimming (multiply by 0.5)
         let bg = if is_past { base_bg * PAST_EVENT_DIM_FACTOR } else { base_bg };
         (bg, border)
     }

@@ -109,6 +109,12 @@ pub enum Message {
     CancelQuickEvent,
     /// Delete an event by its UID
     DeleteEvent(String),
+    /// Request to delete the currently selected event (opens confirmation dialog)
+    RequestDeleteSelectedEvent,
+    /// Confirm event deletion from the confirmation dialog
+    ConfirmDeleteEvent,
+    /// Cancel event deletion
+    CancelDeleteEvent,
     /// Select an event (single click) for viewing/editing
     SelectEvent(String),
 

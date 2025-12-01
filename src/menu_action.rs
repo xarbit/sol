@@ -23,6 +23,8 @@ pub enum MenuAction {
     NavigateNext,
     ScrollTimelineUp,
     ScrollTimelineDown,
+    // Event actions
+    DeleteSelectedEvent,
 }
 
 impl menu::action::MenuAction for MenuAction {
@@ -46,6 +48,7 @@ impl menu::action::MenuAction for MenuAction {
             MenuAction::NavigateNext => Message::NextPeriod,
             MenuAction::ScrollTimelineUp => Message::ScrollTimelineUp,
             MenuAction::ScrollTimelineDown => Message::ScrollTimelineDown,
+            MenuAction::DeleteSelectedEvent => Message::RequestDeleteSelectedEvent,
         }
     }
 }

@@ -159,6 +159,11 @@ dialog-calendar-color = Color
 dialog-delete-calendar-title = Delete Calendar
 dialog-delete-calendar-message = Are you sure you want to delete "{$name}"? This will also delete all events in this calendar.
 
+# Dialog - Delete Event
+dialog-delete-event-title = Delete Event
+dialog-delete-event-message = Are you sure you want to delete "{$name}"?
+dialog-delete-event-recurring-message = Are you sure you want to delete "{$name}"? This is a recurring event.
+
 # Search
 search-placeholder = Search events...
 search-no-results = No events found

@@ -103,6 +103,15 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
         MenuAction::ScrollTimelineDown,
     );
 
+    // Delete Selected Event: Delete key (no modifiers)
+    key_binds.insert(
+        menu::KeyBind {
+            modifiers: vec![],
+            key: Key::Named(Named::Delete),
+        },
+        MenuAction::DeleteSelectedEvent,
+    );
+
     // Store globally for subscription access
     let _ = KEY_BINDS.set(key_binds.clone());
 

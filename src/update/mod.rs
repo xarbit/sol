@@ -431,6 +431,44 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::DeleteEvent(uid) => {
             handle_delete_event(app, uid);
         }
+        Message::RequestDeleteSelectedEvent => {
+            // Request delete of selected event - opens confirmation dialog
+            if let Some(uid) = app.selected_event_uid.clone() {
+                // Find the event to get its name and check if it's recurring
+                if let Ok((event, _calendar_id)) = crate::services::EventHandler::find_event(&app.calendar_manager, &uid) {
+                    let is_recurring = !matches!(event.repeat, crate::caldav::RepeatFrequency::Never);
+                    DialogManager::open(
+                        &mut app.active_dialog,
+                        ActiveDialog::EventDelete {
+                            event_uid: uid,
+                            event_name: event.summary,
+                            is_recurring,
+                            delete_all_occurrences: true, // Default to delete all
+                        },
+                    );
+                } else {
+                    debug!("RequestDeleteSelectedEvent: Event not found: {}", uid);
+                }
+            } else {
+                debug!("RequestDeleteSelectedEvent: No event selected");
+            }
+        }
+        Message::ConfirmDeleteEvent => {
+            // Confirm event deletion from the dialog
+            if let Some((event_uid, _event_name, _is_recurring, _delete_all)) = app.active_dialog.event_delete_data() {
+                let uid = event_uid.to_string();
+                // Close dialog first
+                DialogManager::close(&mut app.active_dialog);
+                // Clear selection
+                app.selected_event_uid = None;
+                // Delete the event
+                handle_delete_event(app, uid);
+            }
+        }
+        Message::CancelDeleteEvent => {
+            // Cancel event deletion
+            DialogManager::close(&mut app.active_dialog);
+        }
         Message::SelectEvent(uid) => {
             handle_select_event(app, uid);
         }

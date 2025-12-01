@@ -15,7 +15,7 @@ mod time_grid;
 pub mod time_picker;
 mod toolbar;
 
-pub use calendar_dialog::{render_calendar_dialog, render_delete_calendar_dialog};
+pub use calendar_dialog::{render_calendar_dialog, render_delete_calendar_dialog, render_delete_event_dialog};
 pub use calendar_list::render_calendar_list;
 pub use event_dialog::render_event_dialog;
 pub use color_picker::{render_color_indicator, render_quick_color_picker, parse_hex_color, parse_color_safe};

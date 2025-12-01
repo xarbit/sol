@@ -14,6 +14,12 @@ use crate::ui_constants::{HOUR_ROW_HEIGHT, BORDER_RADIUS};
 
 use super::utils::{event_time_range, PositionedEvent};
 
+/// Spacing between event blocks in pixels (vertical gap)
+const EVENT_BLOCK_SPACING: f32 = 2.0;
+
+/// Spacing between overlapping event columns in pixels (horizontal gap)
+const EVENT_COLUMN_SPACING: u16 = 4;
+
 /// Render the events overlay layer with events positioned based on their time spans
 /// Uses a row of columns approach where each column renders its events independently
 pub fn render_events_overlay_layer(
@@ -24,7 +30,7 @@ pub fn render_events_overlay_layer(
 ) -> Element<'static, Message> {
     // Each column renders its events independently with proper vertical positioning
     // This ensures overlapping events appear side-by-side
-    let mut columns_row = row().spacing(1);
+    let mut columns_row = row().spacing(EVENT_COLUMN_SPACING);
 
     for col_idx in 0..max_columns {
         // Get all events for this column, sorted by start time
@@ -54,24 +60,33 @@ fn render_column_events(
     let mut col = column().spacing(0);
     let mut current_mins: u32 = 0;
 
+    // Half spacing on each side of an event creates full spacing between consecutive events
+    let half_spacing = EVENT_BLOCK_SPACING / 2.0;
+
     for pe in events {
         let (start_mins, end_mins) = event_time_range(&pe.event);
 
-        // Add spacer to position this event correctly
+        // Add spacer to position this event correctly (includes top margin)
         if start_mins > current_mins {
             let spacer_height = ((start_mins - current_mins) as f32 / 60.0) * HOUR_ROW_HEIGHT;
             col = col.push(vertical_spacer(spacer_height));
         }
 
-        // Render the event
-        let ev_height = ((end_mins - start_mins) as f32 / 60.0) * HOUR_ROW_HEIGHT;
+        // Add top margin spacer for this event
+        col = col.push(vertical_spacer(half_spacing));
+
+        // Render the event (subtract full spacing from height for top + bottom margins)
+        let ev_height = ((end_mins - start_mins) as f32 / 60.0) * HOUR_ROW_HEIGHT - EVENT_BLOCK_SPACING;
         let event_block = render_positioned_event_block(
             date,
             &pe.event,
-            ev_height.max(20.0), // Minimum height for visibility
+            ev_height.max(16.0), // Minimum height for visibility
             selected_event_uid,
         );
         col = col.push(event_block);
+
+        // Add bottom margin spacer
+        col = col.push(vertical_spacer(half_spacing));
 
         current_mins = end_mins;
     }
@@ -132,7 +147,7 @@ fn render_positioned_event_block(
         widget::text(label.clone())
             .size(10)
     )
-    .padding([2, 4])
+    .padding([2, 6])
     .width(Length::Fill)
     .height(Length::Fixed(height))
     .style(move |theme: &cosmic::Theme| container::Style {
