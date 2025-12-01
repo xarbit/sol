@@ -564,7 +564,7 @@ fn render_time_indicator_layer(
             .style(|_theme: &cosmic::Theme| container::Style {
                 background: Some(Background::Color(COLOR_CURRENT_TIME)),
                 border: Border {
-                    radius: 4.0.into(),
+                    radius: BORDER_RADIUS.into(),
                     ..Default::default()
                 },
                 ..Default::default()

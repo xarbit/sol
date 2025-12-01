@@ -2,7 +2,7 @@ use crate::app::CosmicCalendar;
 use crate::components::{render_calendar_dialog, render_delete_calendar_dialog, render_event_dialog};
 use crate::message::Message;
 use crate::styles;
-use crate::ui_constants::SIDEBAR_WIDTH;
+use crate::ui_constants::{BORDER_RADIUS, SIDEBAR_WIDTH};
 use cosmic::iced::widget::stack;
 use cosmic::iced::{alignment, Length};
 use cosmic::widget::{container, divider, mouse_area, row};
@@ -157,7 +157,7 @@ fn render_drag_preview_overlay<'a>(
                 border: cosmic::iced::Border {
                     color: color,
                     width: 1.0,
-                    radius: 4.0.into(),
+                    radius: BORDER_RADIUS.into(),
                 },
                 shadow: cosmic::iced::Shadow {
                     color: cosmic::iced::Color::from_rgba(0.0, 0.0, 0.0, 0.3),

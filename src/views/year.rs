@@ -7,7 +7,7 @@ use crate::localized_names;
 use crate::message::Message;
 use crate::models::YearState;
 use crate::ui_constants::{
-    FONT_SIZE_SMALL, PADDING_SMALL, PADDING_MEDIUM, PADDING_TINY,
+    BORDER_RADIUS, FONT_SIZE_SMALL, PADDING_SMALL, PADDING_MEDIUM, PADDING_TINY,
     SPACING_MEDIUM, SPACING_SMALL, SPACING_XXS, COLOR_DAY_CELL_BORDER, BORDER_WIDTH_THIN
 };
 
@@ -172,7 +172,7 @@ fn render_mini_month(
                                     theme.cosmic().accent_color().into()
                                 )),
                                 border: Border {
-                                    radius: 4.0.into(),
+                                    radius: BORDER_RADIUS.into(),
                                     ..Default::default()
                                 },
                                 ..Default::default()

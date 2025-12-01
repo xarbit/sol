@@ -11,7 +11,7 @@ use cosmic::{widget, Element};
 use crate::components::color_picker::parse_color_safe;
 use crate::components::{span_border_radius_from_flags, ChipOpacity};
 use crate::message::Message;
-use crate::ui_constants::BORDER_WIDTH_HIGHLIGHT;
+use crate::ui_constants::{BORDER_RADIUS_SMALL, BORDER_RADIUS_VALUE, BORDER_WIDTH_HIGHLIGHT};
 
 /// Render a compact date event chip (thin colored line without text)
 /// Used when cell size is too small for full event chips
@@ -23,7 +23,7 @@ pub fn render_compact_date_event_chip(
     let color = parse_color_safe(&color_hex);
 
     // Smaller radius for compact mode
-    let border_radius = span_border_radius_from_flags(is_event_start, is_event_end, 2.0);
+    let border_radius = span_border_radius_from_flags(is_event_start, is_event_end, BORDER_RADIUS_SMALL);
 
     container(widget::text(""))
         .width(Length::Fill)
@@ -60,7 +60,7 @@ pub fn render_date_event_chip(
     let color = parse_color_safe(&color_hex);
 
     // Border radius based on whether this is start/end of event
-    let border_radius = span_border_radius_from_flags(is_event_start, is_event_end, 4.0);
+    let border_radius = span_border_radius_from_flags(is_event_start, is_event_end, BORDER_RADIUS_VALUE);
 
     // Clone summary for the drag preview message (needed because text widget moves it)
     let drag_summary = summary.clone();

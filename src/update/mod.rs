@@ -7,6 +7,18 @@
 //! - `calendar`: Calendar management (create, edit, delete, toggle, color)
 //! - `event`: Event management (quick events, create, delete)
 //! - `selection`: Drag selection for multi-day event creation
+//!
+//! ## Helper Functions
+//!
+//! Common operations are extracted into helper functions to reduce code duplication:
+//!
+//! - [`dismiss_on_focus_loss`]: Clear transient UI state when user navigates away
+//! - [`focus_quick_event_input`]: Focus the quick event text input
+//! - [`scroll_week_to_current_time`]: Scroll week view to show current time
+//! - [`scroll_week_to_hour`]: Scroll week view to a specific hour
+//! - [`close_legacy_event_dialog`]: Close deprecated event dialog field
+//! - [`schedule_deferred_scroll_restore`]: Schedule scroll position restoration
+//! - [`close_quick_event_with_scroll_restore`]: Close quick event and restore scroll
 
 mod calendar;
 mod event;
