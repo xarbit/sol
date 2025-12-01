@@ -60,12 +60,51 @@ fn scroll_week_to_current_time() -> Task<Message> {
     )
 }
 
+/// Scroll the week view time grid to a specific hour
+/// Used to keep the view stable when focusing quick event input
+#[inline]
+fn scroll_week_to_hour(hour: u32) -> Task<Message> {
+    // Show the hour with 1 hour of context above
+    let scroll_to_hour = hour.saturating_sub(1) as f32;
+    let scroll_offset = scroll_to_hour * HOUR_ROW_HEIGHT;
+
+    scrollable::scroll_to(
+        week_time_grid_id(),
+        scrollable::AbsoluteOffset { x: 0.0, y: scroll_offset },
+    )
+}
+
 /// Close the legacy event dialog field
 /// This helper is kept because text_editor::Content doesn't implement Clone
 #[allow(deprecated)]
 #[inline]
 fn close_legacy_event_dialog(app: &mut CosmicCalendar) {
     app.event_dialog = None;
+}
+
+/// Schedule a deferred scroll restore if there's a saved restore position
+/// Uses two-field pattern: scroll_opt tracks current, scroll_restore holds the pre-dialog position
+#[inline]
+fn schedule_deferred_scroll_restore(app: &CosmicCalendar) -> Task<Message> {
+    if app.week_view_scroll_restore.is_some() {
+        // Schedule restore for next update cycle
+        Task::done(cosmic::Action::App(Message::RestoreWeekViewScroll))
+    } else {
+        Task::none()
+    }
+}
+
+/// Close quick event dialog if active and schedule scroll restore
+/// Returns Task::none() if no quick event was active, otherwise schedules restore
+#[inline]
+fn close_quick_event_with_scroll_restore(app: &mut CosmicCalendar) -> Task<Message> {
+    if app.active_dialog.is_quick_event() {
+        DialogManager::close(&mut app.active_dialog);
+        schedule_deferred_scroll_restore(app)
+    } else {
+        DialogManager::close(&mut app.active_dialog);
+        Task::none()
+    }
 }
 
 // Re-export handlers for use in this module
@@ -110,8 +149,11 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
             close_legacy_event_dialog(app);
             // For quick events: only dismiss if empty (focus loss behavior)
             // For other dialogs: close unconditionally
-            if app.active_dialog.is_quick_event() {
+            let was_quick_event = app.active_dialog.is_quick_event();
+            if was_quick_event {
                 dismiss_on_focus_loss(app);
+                // Schedule scroll restore when closing quick event via Escape
+                return schedule_deferred_scroll_restore(app);
             } else {
                 DialogManager::close(&mut app.active_dialog);
             }
@@ -171,18 +213,32 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 log::error!("Failed to toggle week numbers: {}", e);
             }
         }
+        Message::WeekViewScroll(viewport) => {
+            // Track scroll position via on_scroll callback (COSMIC Files pattern)
+            // This stores the actual pixel offset so we can restore it precisely
+            app.week_view_scroll_opt = Some(viewport.absolute_offset());
+        }
+        Message::RestoreWeekViewScroll => {
+            // Restore scroll position from the saved restore point
+            // This uses the position captured BEFORE quick event started (not the continuously tracked one)
+            if let Some(offset) = app.week_view_scroll_restore.take() {
+                return scrollable::scroll_to(week_time_grid_id(), offset);
+            }
+        }
 
         // === Calendar Management ===
         Message::ToggleCalendar(id) => {
-            // Close dialogs when interacting with other elements
-            DialogManager::close(&mut app.active_dialog);
+            // Close dialogs when interacting with other elements (with scroll restore if quick event)
+            let task = close_quick_event_with_scroll_restore(app);
             handle_toggle_calendar(app, id);
+            return task;
         }
         Message::SelectCalendar(id) => {
-            // Close dialogs when selecting a different calendar
-            DialogManager::close(&mut app.active_dialog);
+            // Close dialogs when selecting a different calendar (with scroll restore if quick event)
+            let task = close_quick_event_with_scroll_restore(app);
             app.selected_calendar_id = Some(id);
             app.update_selected_calendar_color();
+            return task;
         }
         Message::ToggleColorPicker(id) => {
             // Toggle: if already open for this calendar, close it; otherwise open it
@@ -301,7 +357,16 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         Message::TimeSelectionEnd => {
             handle_time_selection_end(app);
             // Focus the quick event input if a quick event was started
-            if app.active_dialog.is_quick_event() {
+            if let Some((start_time, _end_time)) = app.active_dialog.quick_event_times() {
+                // Save the current scroll position BEFORE we scroll to show the input
+                // This will be used to restore when the quick event is canceled/committed
+                app.week_view_scroll_restore = app.week_view_scroll_opt;
+                // Chain: focus input, then scroll to the start time position
+                // The scroll ensures the input is visible after focusing
+                let focus_task = focus_quick_event_input();
+                let scroll_task = scroll_week_to_hour(start_time.hour());
+                return Task::batch([focus_task, scroll_task]);
+            } else if app.active_dialog.is_quick_event() {
                 return focus_quick_event_input();
             }
         }
@@ -320,9 +385,13 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
         }
         Message::CommitQuickEvent => {
             handle_commit_quick_event(app);
+            // Schedule deferred scroll restore after UI updates
+            return schedule_deferred_scroll_restore(app);
         }
         Message::CancelQuickEvent => {
             handle_cancel_quick_event(app);
+            // Schedule deferred scroll restore after UI updates
+            return schedule_deferred_scroll_restore(app);
         }
         Message::DeleteEvent(uid) => {
             handle_delete_event(app, uid);

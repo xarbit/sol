@@ -97,6 +97,7 @@ pub fn render_week_view<'a>(
         .push(
             scrollable(time_grid)
                 .id(week_time_grid_id())
+                .on_scroll(Message::WeekViewScroll)
                 .height(Length::Fill)
         );
 

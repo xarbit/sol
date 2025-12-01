@@ -130,6 +130,11 @@ pub struct CosmicCalendar {
     pub event_drag_state: EventDragState,
     /// Currently selected event UID (for viewing/editing/deleting)
     pub selected_event_uid: Option<String>,
+    /// Current scroll position for week view - continuously tracked via on_scroll callback
+    pub week_view_scroll_opt: Option<cosmic::iced::widget::scrollable::AbsoluteOffset>,
+    /// Saved scroll position to restore after quick event closes
+    /// Captured when quick event starts, used to restore when it ends (prevents focus-induced jump)
+    pub week_view_scroll_restore: Option<cosmic::iced::widget::scrollable::AbsoluteOffset>,
 
     // Legacy field - kept because text_editor::Content doesn't implement Clone
     /// Event dialog state (for Create/Edit) - None when dialog is closed
@@ -217,6 +222,8 @@ impl CosmicCalendar {
             selection_state: SelectionState::new(),
             event_drag_state: EventDragState::new(),
             selected_event_uid: None,
+            week_view_scroll_opt: None,
+            week_view_scroll_restore: None,
             // Legacy field - kept because text_editor::Content doesn't implement Clone
             event_dialog: None,
         }

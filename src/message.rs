@@ -3,6 +3,7 @@ use crate::app::EventDialogField;
 use crate::caldav::{AlertTime, RepeatFrequency, TravelTime};
 use crate::dialogs::DialogAction;
 use crate::views::CalendarView;
+use cosmic::iced::widget::scrollable::Viewport;
 use cosmic::widget::text_editor;
 
 #[derive(Debug, Clone)]
@@ -30,6 +31,10 @@ pub enum Message {
     WindowResized,
     ToggleSearch,
     ToggleWeekNumbers,
+    /// Week view scroll position changed - tracks scroll via on_scroll callback (COSMIC pattern)
+    WeekViewScroll(Viewport),
+    /// Restore week view scroll position after quick event dialog closes
+    RestoreWeekViewScroll,
 
     // Calendar management
     ToggleCalendar(String),
