@@ -18,6 +18,11 @@ pub enum MenuAction {
     ViewDay,
     ToggleWeekNumbers,
     About,
+    // Navigation shortcuts (Ctrl+Shift+Arrow keys)
+    NavigatePrevious,
+    NavigateNext,
+    ScrollTimelineUp,
+    ScrollTimelineDown,
 }
 
 impl menu::action::MenuAction for MenuAction {
@@ -37,6 +42,10 @@ impl menu::action::MenuAction for MenuAction {
             MenuAction::ViewDay => Message::ChangeView(CalendarView::Day),
             MenuAction::ToggleWeekNumbers => Message::ToggleWeekNumbers,
             MenuAction::About => Message::About,
+            MenuAction::NavigatePrevious => Message::PreviousPeriod,
+            MenuAction::NavigateNext => Message::NextPeriod,
+            MenuAction::ScrollTimelineUp => Message::ScrollTimelineUp,
+            MenuAction::ScrollTimelineDown => Message::ScrollTimelineDown,
         }
     }
 }

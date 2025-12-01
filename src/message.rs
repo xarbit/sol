@@ -36,6 +36,10 @@ pub enum Message {
     WeekViewScroll(Viewport),
     /// Restore week view scroll position after quick event dialog closes
     RestoreWeekViewScroll,
+    /// Scroll timeline up by one hour (Ctrl+Shift+Up in Day/Week view)
+    ScrollTimelineUp,
+    /// Scroll timeline down by one hour (Ctrl+Shift+Down in Day/Week view)
+    ScrollTimelineDown,
 
     // Calendar management
     ToggleCalendar(String),

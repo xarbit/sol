@@ -237,6 +237,29 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 return scrollable::scroll_to(week_time_grid_id(), offset);
             }
         }
+        Message::ScrollTimelineUp => {
+            // Only works in Day or Week view - scroll up by one hour
+            if matches!(app.current_view, CalendarView::Day | CalendarView::Week) {
+                if let Some(offset) = app.week_view_scroll_opt {
+                    // Scroll up by one hour (decrease y offset, minimum 0)
+                    let new_y = (offset.y - HOUR_ROW_HEIGHT).max(0.0);
+                    let new_offset = scrollable::AbsoluteOffset { x: offset.x, y: new_y };
+                    return scrollable::scroll_to(week_time_grid_id(), new_offset);
+                }
+            }
+        }
+        Message::ScrollTimelineDown => {
+            // Only works in Day or Week view - scroll down by one hour
+            if matches!(app.current_view, CalendarView::Day | CalendarView::Week) {
+                if let Some(offset) = app.week_view_scroll_opt {
+                    // Scroll down by one hour (increase y offset, max 24 hours)
+                    let max_scroll = HOUR_ROW_HEIGHT * 23.0; // Can scroll to show hour 23
+                    let new_y = (offset.y + HOUR_ROW_HEIGHT).min(max_scroll);
+                    let new_offset = scrollable::AbsoluteOffset { x: offset.x, y: new_y };
+                    return scrollable::scroll_to(week_time_grid_id(), new_offset);
+                }
+            }
+        }
 
         // === Calendar Management ===
         Message::ToggleCalendar(id) => {

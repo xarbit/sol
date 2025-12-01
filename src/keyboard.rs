@@ -1,3 +1,4 @@
+use cosmic::iced::keyboard::key::Named;
 use cosmic::iced::keyboard::Key;
 use cosmic::widget::menu;
 use std::collections::HashMap;
@@ -64,6 +65,42 @@ pub fn init_key_binds() -> HashMap<menu::KeyBind, MenuAction> {
             key: Key::Character("y".into()),
         },
         MenuAction::ViewYear,
+    );
+
+    // Navigate Previous Period: Ctrl+Shift+Left (prev month/week/day depending on view)
+    key_binds.insert(
+        menu::KeyBind {
+            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            key: Key::Named(Named::ArrowLeft),
+        },
+        MenuAction::NavigatePrevious,
+    );
+
+    // Navigate Next Period: Ctrl+Shift+Right (next month/week/day depending on view)
+    key_binds.insert(
+        menu::KeyBind {
+            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            key: Key::Named(Named::ArrowRight),
+        },
+        MenuAction::NavigateNext,
+    );
+
+    // Scroll Timeline Up: Ctrl+Shift+Up (scroll up 1 hour in Day/Week view)
+    key_binds.insert(
+        menu::KeyBind {
+            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            key: Key::Named(Named::ArrowUp),
+        },
+        MenuAction::ScrollTimelineUp,
+    );
+
+    // Scroll Timeline Down: Ctrl+Shift+Down (scroll down 1 hour in Day/Week view)
+    key_binds.insert(
+        menu::KeyBind {
+            modifiers: vec![menu::key_bind::Modifier::Ctrl, menu::key_bind::Modifier::Shift],
+            key: Key::Named(Named::ArrowDown),
+        },
+        MenuAction::ScrollTimelineDown,
     );
 
     // Store globally for subscription access
