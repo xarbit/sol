@@ -35,16 +35,19 @@ impl YearState {
     }
 
     /// Navigate to previous year
+    #[allow(dead_code)] // Navigation used by view transitions
     pub fn previous(&self) -> Self {
         Self::new(self.year - 1)
     }
 
     /// Navigate to next year
+    #[allow(dead_code)] // Navigation used by view transitions
     pub fn next(&self) -> Self {
         Self::new(self.year + 1)
     }
 
     /// Check if this year is the current year
+    #[allow(dead_code)] // Reserved for year highlighting
     pub fn is_current_year(&self) -> bool {
         self.year == self.today.0
     }

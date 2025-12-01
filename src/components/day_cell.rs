@@ -62,6 +62,7 @@ pub struct DayCellConfig {
     pub is_adjacent_month: bool,
     pub events: Vec<DisplayEvent>,
     /// Slot assignments for date events: maps event UID to slot index
+    #[allow(dead_code)] // Reserved for future event slot customization
     pub event_slots: std::collections::HashMap<String, usize>,
     /// Maximum slot index used in this week (for consistent vertical offset)
     /// All day cells in the same week should have the same max_slot value

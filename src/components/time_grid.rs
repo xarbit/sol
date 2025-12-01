@@ -17,6 +17,7 @@ pub struct DayColumn {
 }
 
 impl DayColumn {
+    #[allow(dead_code)] // Reserved for future day column configuration
     pub fn new(is_weekend: bool) -> Self {
         Self { is_weekend }
     }

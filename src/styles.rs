@@ -174,6 +174,7 @@ pub fn adjacent_month_selection_style(theme: &cosmic::Theme) -> container::Style
 
 /// Style for a grid cell with border and optional weekend background
 /// Used in time grid rendering for hour slots
+#[allow(dead_code)] // Reserved for future time grid customization
 pub fn grid_cell_style(is_weekend: bool) -> container::Style {
     container::Style {
         background: weekend_background(is_weekend),

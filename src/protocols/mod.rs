@@ -32,9 +32,11 @@ use crate::caldav::CalendarEvent;
 use std::error::Error;
 
 /// Result type for protocol operations
+#[allow(dead_code)] // Part of protocol API for future use
 pub type ProtocolResult<T> = Result<T, Box<dyn Error>>;
 
 /// Protocol trait for calendar event storage backends.
+#[allow(dead_code)] // Foundation for future protocol implementations
 ///
 /// This trait abstracts the storage mechanism, allowing the EventHandler
 /// to work with different backends (local SQLite, CalDAV, Google Calendar, etc.)

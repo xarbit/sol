@@ -10,6 +10,7 @@ use crate::caldav::{CalDavClient, CalendarEvent};
 use super::{Protocol, ProtocolResult};
 
 /// CalDAV protocol for remote calendar servers.
+#[allow(dead_code)] // Foundation for future CalDAV support
 #[derive(Debug)]
 pub struct CalDavProtocol {
     /// CalDAV HTTP client
@@ -20,6 +21,7 @@ pub struct CalDavProtocol {
 
 impl CalDavProtocol {
     /// Create a new CalDavProtocol with server credentials
+    #[allow(dead_code)] // Part of protocol API
     pub fn new(server_url: String, username: String, password: String) -> Self {
         CalDavProtocol {
             client: CalDavClient::new(server_url, username, password),
@@ -28,6 +30,7 @@ impl CalDavProtocol {
     }
 
     /// Create a CalDavProtocol for Google Calendar
+    #[allow(dead_code)] // Part of protocol API
     pub fn google(calendar_id: &str, username: &str, password: &str) -> Self {
         let server_url = format!(
             "https://apidata.googleusercontent.com/caldav/v2/{}/events",
@@ -37,6 +40,7 @@ impl CalDavProtocol {
     }
 
     /// Create a CalDavProtocol for Apple iCloud
+    #[allow(dead_code)] // Part of protocol API
     pub fn icloud(username: &str, password: &str) -> Self {
         let server_url = format!(
             "https://caldav.icloud.com/{}/calendars/",
@@ -46,6 +50,7 @@ impl CalDavProtocol {
     }
 
     /// Create a CalDavProtocol for Nextcloud
+    #[allow(dead_code)] // Part of protocol API
     pub fn nextcloud(server_url: &str, username: &str, password: &str, calendar_name: &str) -> Self {
         let url = format!(
             "{}/remote.php/dav/calendars/{}/{}",

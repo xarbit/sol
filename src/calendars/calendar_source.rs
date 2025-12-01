@@ -15,6 +15,7 @@ pub enum CalendarType {
 }
 
 impl CalendarType {
+    #[allow(dead_code)] // Reserved for future calendar type display
     pub fn as_str(&self) -> &str {
         match self {
             CalendarType::Local => "Local",
@@ -93,6 +94,7 @@ pub trait CalendarSource: Debug + Send {
     fn add_event(&mut self, event: CalendarEvent) -> Result<(), Box<dyn Error>>;
 
     /// Update an existing event
+    #[allow(dead_code)] // Part of trait API for future use
     fn update_event(&mut self, event: CalendarEvent) -> Result<(), Box<dyn Error>>;
 
     /// Delete an event by UID
@@ -103,11 +105,13 @@ pub trait CalendarSource: Debug + Send {
     fn sync(&mut self) -> Result<(), Box<dyn Error>>;
 
     /// Check if this calendar supports read operations
+    #[allow(dead_code)] // Part of trait API for future use
     fn supports_read(&self) -> bool {
         true
     }
 
     /// Check if this calendar supports write operations
+    #[allow(dead_code)] // Part of trait API for future use
     fn supports_write(&self) -> bool {
         true
     }

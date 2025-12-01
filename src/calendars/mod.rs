@@ -119,6 +119,7 @@ impl CalendarManager {
     }
 
     /// Get the shared database connection
+    #[allow(dead_code)] // Reserved for future database operations
     pub fn database(&self) -> Arc<Mutex<Database>> {
         self.db.clone()
     }
@@ -129,6 +130,7 @@ impl CalendarManager {
     }
 
     /// Remove a calendar source by ID
+    #[allow(dead_code)] // Reserved for future calendar removal
     pub fn remove_source(&mut self, id: &str) -> bool {
         if let Some(index) = self.sources.iter().position(|s| s.info().id == id) {
             self.sources.remove(index);
@@ -149,6 +151,7 @@ impl CalendarManager {
     }
 
     /// Get all events from all enabled calendars
+    #[allow(dead_code)] // Reserved for future event filtering
     pub fn get_all_events(&self) -> Vec<CalendarEvent> {
         let mut all_events = Vec::new();
         for source in &self.sources {
@@ -162,6 +165,7 @@ impl CalendarManager {
     }
 
     /// Get events for a specific date from all enabled calendars
+    #[allow(dead_code)] // Reserved for future day view filtering
     pub fn get_events_for_date(&self, date: chrono::NaiveDate) -> Vec<CalendarEvent> {
         self.get_all_events()
             .into_iter()
@@ -170,6 +174,7 @@ impl CalendarManager {
     }
 
     /// Get events for a specific month from all enabled calendars
+    #[allow(dead_code)] // Reserved for future month filtering
     pub fn get_events_for_month(&self, year: i32, month: u32) -> Vec<CalendarEvent> {
         self.get_all_events()
             .into_iter()
@@ -376,6 +381,7 @@ impl CalendarManager {
     }
 
     /// Sync all calendar sources
+    #[allow(dead_code)] // Reserved for future CalDAV sync
     pub fn sync_all(&mut self) -> Result<(), Box<dyn Error>> {
         for source in &mut self.sources {
             if source.is_enabled() {

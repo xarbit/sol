@@ -59,6 +59,7 @@ impl LocalePreferences {
 
     /// Get the number of days to subtract from Monday to get first day of week
     /// Monday = 0, Tuesday = 1, ..., Sunday = 6
+    #[allow(dead_code)] // Reserved for future locale-aware week calculation
     pub fn days_from_monday(&self) -> i64 {
         use chrono::Weekday;
         match self.first_day_of_week {

@@ -106,10 +106,12 @@ impl ActiveDialog {
     }
 
     /// Check if a specific dialog type is open
+    #[allow(dead_code)] // Reserved for future dialog type checking
     pub fn is_color_picker(&self) -> bool {
         matches!(self, ActiveDialog::ColorPicker { .. })
     }
 
+    #[allow(dead_code)] // Reserved for future dialog type checking
     pub fn is_calendar_dialog(&self) -> bool {
         matches!(
             self,
@@ -119,6 +121,7 @@ impl ActiveDialog {
         )
     }
 
+    #[allow(dead_code)] // Reserved for future dialog type checking
     pub fn is_event_dialog(&self) -> bool {
         matches!(self, ActiveDialog::EventDialogOpen)
     }
@@ -161,6 +164,7 @@ impl ActiveDialog {
     }
 
     /// Check if the quick event is a timed event (has times)
+    #[allow(dead_code)] // Reserved for future timed quick event handling
     pub fn is_timed_quick_event(&self) -> bool {
         matches!(self, ActiveDialog::QuickEvent { start_time: Some(_), .. })
     }
@@ -194,6 +198,7 @@ impl ActiveDialog {
 }
 
 /// Actions that can be performed on dialogs
+#[allow(dead_code)] // Part of dialog action API
 #[derive(Debug, Clone)]
 pub enum DialogAction {
     /// Close any open dialog (dismisses empty quick events, cancels others)
@@ -269,6 +274,7 @@ impl DialogManager {
 
     /// Close dialog if Escape was pressed
     /// Returns true if a dialog was closed
+    #[allow(dead_code)] // Reserved for keyboard handling
     pub fn handle_escape(current: &mut ActiveDialog) -> bool {
         if current.is_open() {
             info!("DialogManager: Escape pressed, closing dialog");
@@ -442,11 +448,13 @@ pub struct QuickEventResult {
 
 impl QuickEventResult {
     /// Check if this is a multi-day event
+    #[allow(dead_code)] // Reserved for event creation logic
     pub fn is_multi_day(&self) -> bool {
         self.start_date != self.end_date
     }
 
     /// Check if this is a timed event (has times)
+    #[allow(dead_code)] // Reserved for event creation logic
     pub fn is_timed(&self) -> bool {
         self.start_time.is_some()
     }

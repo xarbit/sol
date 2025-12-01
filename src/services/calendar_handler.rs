@@ -21,6 +21,7 @@ pub enum CalendarError {
     /// Failed to save configuration
     ConfigError(String),
     /// Calendar ID already exists
+    #[allow(dead_code)] // Reserved for future calendar duplication check
     DuplicateId(String),
 }
 

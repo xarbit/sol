@@ -10,6 +10,7 @@ use crate::database::Database;
 use super::{Protocol, ProtocolResult};
 
 /// Local protocol using SQLite database for event storage.
+#[allow(dead_code)] // Foundation for future protocol-based architecture
 #[derive(Debug)]
 pub struct LocalProtocol {
     /// Shared database connection
@@ -18,6 +19,7 @@ pub struct LocalProtocol {
 
 impl LocalProtocol {
     /// Create a new LocalProtocol with a shared database connection
+    #[allow(dead_code)] // Part of protocol API
     pub fn new(db: Arc<Mutex<Database>>) -> Self {
         LocalProtocol { db }
     }

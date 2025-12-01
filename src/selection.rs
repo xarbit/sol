@@ -55,21 +55,25 @@ impl SelectionPoint {
     }
 
     /// Create a date+time selection point (for week/day views)
+    #[allow(dead_code)] // Reserved for week/day view time selection
     pub fn with_time(date: NaiveDate, time: NaiveTime) -> Self {
         Self { date, time: Some(time) }
     }
 
     /// Get the date component
+    #[allow(dead_code)] // Part of selection API
     pub fn date(&self) -> NaiveDate {
         self.date
     }
 
     /// Get the time component (if any)
+    #[allow(dead_code)] // Part of selection API
     pub fn time(&self) -> Option<NaiveTime> {
         self.time
     }
 
     /// Check if this is a date-only point
+    #[allow(dead_code)] // Part of selection API
     pub fn is_date_only(&self) -> bool {
         self.time.is_none()
     }
@@ -105,6 +109,7 @@ impl SelectionState {
     }
 
     /// Start a new time-based selection (for week/day views)
+    #[allow(dead_code)] // Reserved for week/day view selection
     pub fn start_with_time(&mut self, date: NaiveDate, time: NaiveTime) {
         self.start_at(SelectionPoint::with_time(date, time));
     }
@@ -123,6 +128,7 @@ impl SelectionState {
     }
 
     /// Update the selection end point with date and time (for week/day views)
+    #[allow(dead_code)] // Reserved for week/day view selection
     pub fn update_with_time(&mut self, date: NaiveDate, time: NaiveTime) {
         self.update_to(SelectionPoint::with_time(date, time));
     }
@@ -176,6 +182,7 @@ impl SelectionState {
     }
 
     /// Check if the current selection spans multiple days
+    #[allow(dead_code)] // Part of selection API
     pub fn is_multi_day(&self) -> bool {
         self.get_range()
             .map(|r| r.is_multi_day())
@@ -228,11 +235,13 @@ impl SelectionState {
     }
 
     /// Get the start date (for backwards compatibility)
+    #[allow(dead_code)] // Part of selection API
     pub fn start_date(&self) -> Option<NaiveDate> {
         self.start.map(|p| p.date)
     }
 
     /// Get the end date (for backwards compatibility)
+    #[allow(dead_code)] // Part of selection API
     pub fn end_date(&self) -> Option<NaiveDate> {
         self.end.map(|p| p.date)
     }
@@ -263,16 +272,19 @@ impl SelectionRange {
     }
 
     /// Create a date-only range (for month view compatibility)
+    #[allow(dead_code)] // Part of selection API
     pub fn from_dates(date1: NaiveDate, date2: NaiveDate) -> Self {
         Self::new(SelectionPoint::date_only(date1), SelectionPoint::date_only(date2))
     }
 
     /// Get the start date
+    #[allow(dead_code)] // Part of selection API
     pub fn start_date(&self) -> NaiveDate {
         self.start.date
     }
 
     /// Get the end date
+    #[allow(dead_code)] // Part of selection API
     pub fn end_date(&self) -> NaiveDate {
         self.end.date
     }
@@ -288,6 +300,7 @@ impl SelectionRange {
     }
 
     /// Check if this is a date-only range (no times specified)
+    #[allow(dead_code)] // Part of selection API
     pub fn is_date_only(&self) -> bool {
         self.start.is_date_only() && self.end.is_date_only()
     }
@@ -298,16 +311,19 @@ impl SelectionRange {
     }
 
     /// Check if this range spans multiple days
+    #[allow(dead_code)] // Part of selection API
     pub fn is_multi_day(&self) -> bool {
         self.start.date != self.end.date
     }
 
     /// Get the number of days in this range
+    #[allow(dead_code)] // Part of selection API
     pub fn day_count(&self) -> i64 {
         (self.end.date - self.start.date).num_days() + 1
     }
 
     /// Iterate over all dates in this range
+    #[allow(dead_code)] // Part of selection API
     pub fn dates(&self) -> impl Iterator<Item = NaiveDate> {
         let start = self.start.date;
         let end = self.end.date;
@@ -331,6 +347,7 @@ pub struct DragPreviewInfo {
 
 impl DragPreviewInfo {
     /// Create a new empty preview info
+    #[allow(dead_code)] // Part of drag preview API
     pub fn new() -> Self {
         Self::default()
     }
@@ -369,6 +386,7 @@ impl DragTarget {
     }
 
     /// Create a date+time target (for week/day views)
+    #[allow(dead_code)] // Reserved for week/day view event dragging
     pub fn with_time(date: NaiveDate, time: NaiveTime) -> Self {
         Self { date, time: Some(time) }
     }
@@ -408,6 +426,7 @@ impl EventDragState {
     }
 
     /// Start dragging an event with time (for week/day views)
+    #[allow(dead_code)] // Reserved for week/day view event dragging
     pub fn start_with_time(&mut self, event_uid: String, original_date: NaiveDate, original_time: NaiveTime, summary: String, color: String) {
         self.start_internal(event_uid, original_date, Some(original_time), summary, color);
     }
@@ -439,6 +458,7 @@ impl EventDragState {
     }
 
     /// Update the target date and time during drag (for week/day views)
+    #[allow(dead_code)] // Reserved for week/day view event dragging
     pub fn update_with_time(&mut self, target_date: NaiveDate, target_time: NaiveTime) {
         if self.is_active {
             debug!("EventDragState: Updating target to {} {:?}", target_date, target_time);
@@ -471,6 +491,7 @@ impl EventDragState {
 
     /// End the drag operation with full time information
     /// Returns (event_uid, original_date, original_time, new_date, new_time) if a move should occur
+    #[allow(dead_code)] // Reserved for week/day view event dragging with time
     pub fn end_with_time(&mut self) -> Option<(String, NaiveDate, Option<NaiveTime>, NaiveDate, Option<NaiveTime>)> {
         if !self.is_active {
             return None;
@@ -520,11 +541,13 @@ impl EventDragState {
     }
 
     /// Get the target time (if any)
+    #[allow(dead_code)] // Reserved for week/day view time-based operations
     pub fn target_time(&self) -> Option<NaiveTime> {
         self.target.and_then(|t| t.time)
     }
 
     /// Get the date offset (number of days to move)
+    #[allow(dead_code)] // Reserved for multi-day event dragging
     pub fn get_offset(&self) -> Option<i64> {
         match (self.original_date, self.target) {
             (Some(original), Some(target)) => Some((target.date - original).num_days()),

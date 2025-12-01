@@ -67,11 +67,13 @@ impl LocalCalendar {
     }
 
     /// Get all events from this calendar (uses cache)
+    #[allow(dead_code)] // Reserved for future event access
     pub fn get_events(&self) -> &[CalendarEvent] {
         &self.cached_events
     }
 
     /// Get events for a specific date
+    #[allow(dead_code)] // Reserved for future day filtering
     pub fn get_events_for_date(&self, date: chrono::NaiveDate) -> Vec<&CalendarEvent> {
         self.cached_events
             .iter()
@@ -80,6 +82,7 @@ impl LocalCalendar {
     }
 
     /// Get events for a specific month
+    #[allow(dead_code)] // Reserved for future month filtering
     pub fn get_events_for_month(&self, year: i32, month: u32) -> Vec<&CalendarEvent> {
         use chrono::Datelike;
         self.cached_events

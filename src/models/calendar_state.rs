@@ -157,6 +157,7 @@ impl CalendarState {
     }
 
     /// Get the weekday for a specific day in the month
+    #[allow(dead_code)] // Reserved for future weekday-based features
     pub fn get_weekday(&self, day: u32) -> chrono::Weekday {
         let date = chrono::NaiveDate::from_ymd_opt(self.year, self.month, day)
             .expect("Invalid date");

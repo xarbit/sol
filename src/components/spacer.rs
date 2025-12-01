@@ -37,6 +37,7 @@ pub fn fill_spacer() -> Element<'static, Message> {
 }
 
 /// Creates a spacer with shrink width and fixed height.
+#[allow(dead_code)] // Reserved for future layout flexibility
 pub fn shrink_vertical_spacer(height: f32) -> Element<'static, Message> {
     spacer(Length::Shrink, Length::Fixed(height))
 }

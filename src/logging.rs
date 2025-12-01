@@ -89,6 +89,7 @@ pub fn init() {
 /// # Arguments
 ///
 /// * `default_level` - The default log level (e.g., "debug", "warn")
+#[allow(dead_code)] // Reserved for future log level configuration
 pub fn init_with_level(default_level: &str) {
     env_logger::Builder::from_env(
         env_logger::Env::default().default_filter_or(default_level)
@@ -104,6 +105,7 @@ pub fn init_with_level(default_level: &str) {
 /// Check if debug logging is enabled.
 ///
 /// Useful for conditionally computing expensive debug information.
+#[allow(dead_code)] // Reserved for conditional debug info
 pub fn is_debug_enabled() -> bool {
     log::max_level() >= LevelFilter::Debug
 }
@@ -111,6 +113,7 @@ pub fn is_debug_enabled() -> bool {
 /// Check if trace logging is enabled.
 ///
 /// Useful for conditionally computing very expensive trace information.
+#[allow(dead_code)] // Reserved for conditional trace info
 pub fn is_trace_enabled() -> bool {
     log::max_level() >= LevelFilter::Trace
 }

@@ -16,4 +16,5 @@ pub const COLOR_CURRENT_TIME: Color = Color::from_rgb(1.0, 59.0/255.0, 48.0/255.
 
 /// Light blue background for time slot selection in week/day views
 /// Semi-transparent so it overlays naturally on cells
+#[allow(dead_code)] // Reserved for future time slot selection feature
 pub const COLOR_SELECTION_BACKGROUND: Color = Color::from_rgba(0.0, 122.0/255.0, 255.0/255.0, 0.2); // #007AFF @ 20%

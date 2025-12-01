@@ -18,6 +18,7 @@ pub struct DayHeaderConfig {
 
 impl DayHeaderConfig {
     /// Create a day header config for week view (smaller text)
+    #[allow(dead_code)] // Reserved for future week view header configuration
     pub fn week_view(day_name: String, day_number: String, is_today: bool) -> Self {
         Self {
             day_name,

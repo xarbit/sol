@@ -47,6 +47,7 @@ impl WeekState {
     }
 
     /// Create WeekState for current week with Monday as first day
+    #[allow(dead_code)] // Reserved for direct week state creation
     pub fn current(locale: &LocalePreferences) -> Self {
         Self::new(chrono::Local::now().date_naive(), Weekday::Mon, locale)
     }
@@ -57,11 +58,13 @@ impl WeekState {
     }
 
     /// Navigate to previous week
+    #[allow(dead_code)] // Navigation used by view transitions
     pub fn previous(&self, locale: &LocalePreferences) -> Self {
         Self::new(self.days[0] - chrono::Duration::days(7), self.first_day_of_week, locale)
     }
 
     /// Navigate to next week
+    #[allow(dead_code)] // Navigation used by view transitions
     pub fn next(&self, locale: &LocalePreferences) -> Self {
         Self::new(self.days[0] + chrono::Duration::days(7), self.first_day_of_week, locale)
     }
@@ -72,6 +75,7 @@ impl WeekState {
     }
 
     /// Check if this week contains today
+    #[allow(dead_code)] // Reserved for today button navigation
     pub fn contains_today(&self) -> bool {
         self.days.iter().any(|d| *d == self.today)
     }

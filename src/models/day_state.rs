@@ -38,11 +38,13 @@ impl DayState {
     }
 
     /// Navigate to previous day
+    #[allow(dead_code)] // Navigation used by view transitions
     pub fn previous(&self, locale: &LocalePreferences) -> Self {
         Self::new(self.date - chrono::Duration::days(1), locale)
     }
 
     /// Navigate to next day
+    #[allow(dead_code)] // Navigation used by view transitions
     pub fn next(&self, locale: &LocalePreferences) -> Self {
         Self::new(self.date + chrono::Duration::days(1), locale)
     }

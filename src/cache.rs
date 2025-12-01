@@ -43,6 +43,7 @@ impl CalendarCache {
     }
 
     /// Get the current formatted period text
+    #[allow(dead_code)] // Reserved for future period text display
     pub fn current_period_text(&self) -> &str {
         self.period_texts.get(&self.current)
             .map(|s| s.as_str())

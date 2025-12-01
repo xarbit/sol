@@ -12,9 +12,11 @@ use std::fs;
 use std::path::Path;
 
 /// Result type for export operations
+#[allow(dead_code)] // Part of export API for future use
 pub type ExportResult<T> = Result<T, ExportError>;
 
 /// Error types for export operations
+#[allow(dead_code)] // Part of export API for future use
 #[derive(Debug)]
 pub enum ExportError {
     /// File I/O error
@@ -41,10 +43,12 @@ impl std::fmt::Display for ExportError {
 impl Error for ExportError {}
 
 /// Export Handler - import/export operations.
+#[allow(dead_code)] // Foundation for future import/export feature
 pub struct ExportHandler;
 
 impl ExportHandler {
     /// Export a single event to iCalendar format
+    #[allow(dead_code)] // Part of export API
     pub fn event_to_ical(event: &CalendarEvent) -> Calendar {
         debug!("ExportHandler: Converting event '{}' (uid={}) to iCal", event.summary, event.uid);
 
@@ -74,6 +78,7 @@ impl ExportHandler {
     }
 
     /// Export all events from a calendar to iCalendar format
+    #[allow(dead_code)] // Part of export API
     pub fn calendar_to_ical(
         manager: &CalendarManager,
         calendar_id: &str,
@@ -127,6 +132,7 @@ impl ExportHandler {
     }
 
     /// Export a calendar to an iCalendar file
+    #[allow(dead_code)] // Part of export API
     pub fn export_to_file<P: AsRef<Path>>(
         manager: &CalendarManager,
         calendar_id: &str,
@@ -147,6 +153,7 @@ impl ExportHandler {
     }
 
     /// Export all calendars to a single iCalendar file
+    #[allow(dead_code)] // Part of export API
     pub fn export_all_to_file<P: AsRef<Path>>(
         manager: &CalendarManager,
         path: P,
@@ -196,6 +203,7 @@ impl ExportHandler {
     }
 
     /// Read an iCalendar file (placeholder for future import functionality)
+    #[allow(dead_code)] // Part of export API
     pub fn read_ical_file<P: AsRef<Path>>(path: P) -> ExportResult<String> {
         info!("ExportHandler: Reading iCal file {:?}", path.as_ref());
         fs::read_to_string(&path).map_err(|e| {

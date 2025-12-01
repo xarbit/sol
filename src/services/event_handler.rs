@@ -270,6 +270,7 @@ impl EventHandler {
     }
 
     /// Sync all calendars.
+    #[allow(dead_code)] // Reserved for CalDAV/remote calendar sync
     pub fn sync_all(calendar_manager: &mut CalendarManager) -> EventResult<()> {
         info!("EventHandler: Syncing all calendars");
         let mut sync_count = 0;

@@ -7,6 +7,7 @@ use cosmic::iced::widget::scrollable::Viewport;
 use cosmic::widget::text_editor;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Message variants are part of the app's message-passing API - some are reserved for future features
 pub enum Message {
     // Dialog management (centralized)
     /// Handle a dialog action (open, close, update)

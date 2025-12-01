@@ -11,6 +11,7 @@ use std::error::Error;
 pub type SettingsResult<T> = Result<T, SettingsError>;
 
 /// Error types for settings operations
+#[allow(dead_code)] // Part of settings API for future use
 #[derive(Debug)]
 pub enum SettingsError {
     /// Failed to load settings
@@ -18,6 +19,7 @@ pub enum SettingsError {
     /// Failed to save settings
     SaveError(String),
     /// Invalid setting value
+    #[allow(dead_code)] // Reserved for future validation
     ValidationError(String),
 }
 
@@ -34,10 +36,12 @@ impl std::fmt::Display for SettingsError {
 impl Error for SettingsError {}
 
 /// Settings Handler - centralized settings management.
+#[allow(dead_code)] // Foundation for future centralized settings
 pub struct SettingsHandler;
 
 impl SettingsHandler {
     /// Load settings from disk, returning defaults if not found
+    #[allow(dead_code)] // Part of settings API
     pub fn load() -> SettingsResult<AppSettings> {
         debug!("SettingsHandler: Loading settings from disk");
         match AppSettings::load() {
@@ -73,6 +77,7 @@ impl SettingsHandler {
     }
 
     /// Set week numbers display and save
+    #[allow(dead_code)] // Part of settings API
     pub fn set_week_numbers(settings: &mut AppSettings, show: bool) -> SettingsResult<()> {
         info!("SettingsHandler: Setting week numbers to {}", show);
         settings.show_week_numbers = show;
@@ -80,6 +85,7 @@ impl SettingsHandler {
     }
 
     /// Reset settings to defaults and save
+    #[allow(dead_code)] // Part of settings API
     pub fn reset_to_defaults() -> SettingsResult<AppSettings> {
         info!("SettingsHandler: Resetting settings to defaults");
         let settings = AppSettings::default();

@@ -50,12 +50,14 @@ impl Database {
     }
 
     /// Open an encrypted database with a passphrase
+    #[allow(dead_code)] // Reserved for future encryption support
     pub fn open_encrypted(passphrase: &str) -> Result<Self, Box<dyn Error>> {
         let path = Self::get_database_path();
         Self::open_encrypted_at(path, passphrase)
     }
 
     /// Open an encrypted database at a specific path
+    #[allow(dead_code)] // Reserved for future encryption support
     pub fn open_encrypted_at(path: PathBuf, passphrase: &str) -> Result<Self, Box<dyn Error>> {
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
@@ -257,6 +259,7 @@ impl Database {
     }
 
     /// Update an existing event
+    #[allow(dead_code)] // Used by LocalCalendar trait implementation
     pub fn update_event(&self, event: &CalendarEvent) -> Result<(), Box<dyn Error>> {
         let travel_time = serde_json::to_string(&event.travel_time)?;
         let repeat = serde_json::to_string(&event.repeat)?;
