@@ -20,8 +20,16 @@ use cosmic::widget::menu::Action as _; // Import trait for .message() method
 use cosmic::{Application, Element};
 use log::info;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 const APP_ID: &str = "io.github.xarbit.SolCalendar";
+
+/// Command-line flags passed to the application
+#[derive(Debug, Clone, Default)]
+pub struct AppFlags {
+    /// Files to open on startup (e.g., .ics files)
+    pub files_to_open: Vec<PathBuf>,
+}
 
 /// Enum for which field is being edited in the event dialog
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -385,7 +393,7 @@ impl Default for CosmicCalendar {
 
 impl Application for CosmicCalendar {
     type Executor = cosmic::executor::Default;
-    type Flags = ();
+    type Flags = AppFlags;
     type Message = Message;
     const APP_ID: &'static str = APP_ID;
 
@@ -397,10 +405,18 @@ impl Application for CosmicCalendar {
         &mut self.core
     }
 
-    fn init(core: Core, _flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
+    fn init(core: Core, flags: Self::Flags) -> (Self, cosmic::app::Task<Self::Message>) {
         info!("CosmicCalendar: Initializing application");
         let app = Self::initialize_app(core);
         info!("CosmicCalendar: Application initialized with view {:?}", app.current_view);
+
+        // Handle file arguments if provided
+        if !flags.files_to_open.is_empty() {
+            info!("CosmicCalendar: {} file(s) to open on startup", flags.files_to_open.len());
+            // TODO: Trigger import dialog for each file
+            // This will be implemented when we add the import messages and handlers
+        }
+
         (app, cosmic::app::Task::none())
     }
 

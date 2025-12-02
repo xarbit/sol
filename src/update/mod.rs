@@ -896,6 +896,30 @@ pub fn handle_message(app: &mut CosmicCalendar, message: Message) -> Task<Messag
                 cosmic::app::Action::Surface(action),
             ));
         }
+
+        // === Import/Export Operations ===
+        Message::ImportFile(path) => {
+            // TODO: Implement file import handling
+            // Parse the file and show import dialog
+            info!("Message::ImportFile: {:?}", path);
+        }
+        Message::ShowImportDialog(events, source_file_name) => {
+            // TODO: Open import dialog with parsed events
+            info!("Message::ShowImportDialog: {} events from {}", events.len(), source_file_name);
+        }
+        Message::SelectImportCalendar(calendar_id) => {
+            // TODO: Update selected calendar in import dialog
+            info!("Message::SelectImportCalendar: {}", calendar_id);
+        }
+        Message::ConfirmImport => {
+            // TODO: Perform the import operation
+            info!("Message::ConfirmImport");
+        }
+        Message::CancelImport => {
+            // TODO: Close import dialog
+            info!("Message::CancelImport");
+            DialogManager::close(&mut app.active_dialog);
+        }
     }
 
     Task::none()

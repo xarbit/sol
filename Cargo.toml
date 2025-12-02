@@ -59,3 +59,9 @@ rusqlite = { version = "0.32", features = ["bundled-sqlcipher"] }
 # Logging
 log = "0.4"
 env_logger = "0.11"
+
+# Command-line argument parsing
+clap = { version = "4.5", features = ["derive"] }
+
+# Note: cosmic-text is pinned via Cargo.lock to commit 9339446cfa9b7f0110094a97764dccc09cfa98a2
+# This is a known working version. Do not update libcosmic without verifying cosmic-text compatibility.

@@ -55,7 +55,7 @@ pub enum TravelTime {
     Custom(i32), // Custom minutes
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CalendarEvent {
     /// Unique identifier for the event
     pub uid: String,

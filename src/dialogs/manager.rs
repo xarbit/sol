@@ -30,6 +30,7 @@
 //! in `CosmicCalendar` because `text_editor::Content` doesn't implement `Clone`.
 //! The centralized `Message::CloseDialog` handler closes all legacy dialog fields.
 
+use crate::caldav::CalendarEvent;
 use chrono::{NaiveDate, NaiveTime};
 use log::{debug, info};
 
@@ -98,6 +99,15 @@ pub enum ActiveDialog {
     /// This variant exists to track that an event dialog is open,
     /// but the actual data is in `app.event_dialog`
     EventDialogOpen,
+    /// Import events dialog
+    Import {
+        /// Events to import
+        events: Vec<CalendarEvent>,
+        /// Source file name for display
+        source_file_name: String,
+        /// Selected target calendar ID
+        selected_calendar_id: Option<String>,
+    },
 }
 
 impl Default for ActiveDialog {
@@ -142,6 +152,29 @@ impl ActiveDialog {
     #[allow(dead_code)] // Reserved for future dialog type checking
     pub fn is_event_delete(&self) -> bool {
         matches!(self, ActiveDialog::EventDelete { .. })
+    }
+
+    /// Check if this is an import dialog
+    #[allow(dead_code)] // Reserved for import dialog handling
+    pub fn is_import(&self) -> bool {
+        matches!(self, ActiveDialog::Import { .. })
+    }
+
+    /// Get import dialog data if open (events, source_file_name, selected_calendar_id)
+    #[allow(dead_code)] // Reserved for import dialog rendering
+    pub fn import_data(&self) -> Option<(&[CalendarEvent], &str, Option<&str>)> {
+        match self {
+            ActiveDialog::Import {
+                events,
+                source_file_name,
+                selected_calendar_id,
+            } => Some((
+                events,
+                source_file_name,
+                selected_calendar_id.as_deref(),
+            )),
+            _ => None,
+        }
     }
 
     /// Get event delete data if this is an event delete dialog
@@ -265,6 +298,13 @@ pub enum DialogAction {
     CalendarNameChanged(String),
     /// Update calendar dialog color
     CalendarColorChanged(String),
+    /// Open import dialog with events and source file name
+    OpenImport {
+        events: Vec<CalendarEvent>,
+        source_file_name: String,
+    },
+    /// Select target calendar for import
+    SelectImportCalendar(String),
 }
 
 /// Dialog Manager handles all dialog state transitions
@@ -452,6 +492,30 @@ impl DialogManager {
                         *c = color;
                     }
                     _ => {}
+                }
+                None
+            }
+            DialogAction::OpenImport {
+                events,
+                source_file_name,
+            } => {
+                Self::open(
+                    current,
+                    ActiveDialog::Import {
+                        events,
+                        source_file_name,
+                        selected_calendar_id: None,
+                    },
+                );
+                None
+            }
+            DialogAction::SelectImportCalendar(calendar_id) => {
+                if let ActiveDialog::Import {
+                    selected_calendar_id,
+                    ..
+                } = current
+                {
+                    *selected_calendar_id = Some(calendar_id);
                 }
                 None
             }

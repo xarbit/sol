@@ -1,10 +1,11 @@
 use chrono::{NaiveDate, NaiveTime};
 use crate::app::EventDialogField;
-use crate::caldav::{AlertTime, RepeatFrequency, TravelTime};
+use crate::caldav::{AlertTime, CalendarEvent, RepeatFrequency, TravelTime};
 use crate::dialogs::DialogAction;
 use crate::views::CalendarView;
 use cosmic::iced::widget::scrollable::Viewport;
 use cosmic::widget::text_editor;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)] // Message variants are part of the app's message-passing API - some are reserved for future features
@@ -223,4 +224,16 @@ pub enum Message {
     LaunchUrl(String),
     ToggleContextDrawer,
     Surface(cosmic::surface::Action),
+
+    // Import/Export operations
+    /// Import events from a file path
+    ImportFile(PathBuf),
+    /// Show import dialog with parsed events (events, source_file_name)
+    ShowImportDialog(Vec<CalendarEvent>, String),
+    /// Select target calendar for import
+    SelectImportCalendar(String),
+    /// Confirm importing events into selected calendar
+    ConfirmImport,
+    /// Cancel import operation
+    CancelImport,
 }

@@ -29,13 +29,35 @@ mod update;
 mod validation;
 mod views;
 
-use app::CosmicCalendar;
+use app::{AppFlags, CosmicCalendar};
+use clap::Parser;
 use cosmic::app::Settings;
 #[cfg(debug_assertions)]
 use database::Database;
 use log::info;
 #[cfg(debug_assertions)]
 use std::env;
+use std::path::PathBuf;
+
+/// Sol Calendar - A calendar application for the COSMIC Desktop
+#[derive(Parser, Debug)]
+#[command(name = "sol-calendar")]
+#[command(about = "A calendar application for the COSMIC Desktop", long_about = None)]
+struct Cli {
+    /// Calendar files to import (.ics files)
+    #[arg(value_name = "FILE")]
+    files: Vec<PathBuf>,
+
+    /// Reset database (development only, debug builds only)
+    #[cfg(debug_assertions)]
+    #[arg(long = "dev-reset-db")]
+    dev_reset_db: bool,
+
+    /// Seed database with demo data (development only, debug builds only)
+    #[cfg(debug_assertions)]
+    #[arg(long = "dev-seed-data")]
+    dev_seed_data: bool,
+}
 
 /// Application entry point
 pub fn main() -> cosmic::iced::Result {
@@ -44,13 +66,14 @@ pub fn main() -> cosmic::iced::Result {
 
     info!("Sol Calendar starting...");
 
+    // Parse command-line arguments
+    let cli = Cli::parse();
+
     // Development-only CLI flags (only available in debug builds)
     #[cfg(debug_assertions)]
     {
-        let args: Vec<String> = env::args().collect();
-
         // Check for --dev-reset-db flag
-        if args.contains(&"--dev-reset-db".to_string()) {
+        if cli.dev_reset_db {
             info!("[DEV] Clearing all events from database");
             match Database::open() {
                 Ok(db) => match db.clear_all_events() {
@@ -71,7 +94,7 @@ pub fn main() -> cosmic::iced::Result {
         }
 
         // Check for --dev-seed-data flag
-        if args.contains(&"--dev-seed-data".to_string()) {
+        if cli.dev_seed_data {
             info!("[DEV] Generating demo events for a full year");
             println!("[DEV] Seeding database with demo data...");
             match Database::open() {
@@ -93,9 +116,18 @@ pub fn main() -> cosmic::iced::Result {
         }
     }
 
+    // Prepare application flags
+    let app_flags = AppFlags {
+        files_to_open: cli.files,
+    };
+
+    if !app_flags.files_to_open.is_empty() {
+        info!("Launching with {} file(s) to open", app_flags.files_to_open.len());
+    }
+
     // Initialize localization system
     localize::init();
 
     info!("Localization initialized, launching application");
-    cosmic::app::run::<CosmicCalendar>(Settings::default(), ())
+    cosmic::app::run::<CosmicCalendar>(Settings::default(), app_flags)
 }

@@ -17,6 +17,7 @@
     <ul>
       <li>Month, week, and day views</li>
       <li>Support for multiple calendars with custom colors</li>
+      <li>Import and export iCalendar (.ics) files</li>
       <li>Local calendar storage</li>
       <li>CalDAV synchronization support</li>
       <li>Responsive design for desktop and mobile</li>
@@ -25,6 +26,12 @@
   </description>
 
   <launchable type="desktop-id">io.github.xarbit.SolCalendar.desktop</launchable>
+
+  <provides>
+    <mediatype>text/calendar</mediatype>
+    <mediatype>text/x-vcalendar</mediatype>
+    <mediatype>application/ics</mediatype>
+  </provides>
 
   <url type="homepage">https://github.com/xarbit/sol</url>
   <url type="bugtracker">https://github.com/xarbit/sol/issues</url>
