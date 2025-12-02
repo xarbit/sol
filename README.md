@@ -1,5 +1,5 @@
 <div align="center">    
-  <img src="res/icons/hicolor/scalable/apps/io.github.xarbit.SolCalendar.svg" alt="Sol Calendar Icon" width="300" height="300">
+  <img src="res/icons/hicolor/scalable/apps/dev.xarbit.apps.Calendar.svg" alt="Calendar Icon" width="300" height="300">
 
   # A Calendar made for the COSMIC Desktop
 </div>
@@ -18,7 +18,7 @@ A modern calendar application built with [libcosmic](https://github.com/pop-os/l
 
 ## About
 
-Sol is a native calendar application designed for the COSMIC desktop environment. Built using libcosmic's widget system, it provides a clean, intuitive interface inspired by other popular Calendar's design while following COSMIC's design language and responsive layout patterns.
+Calendar is a native calendar application designed for the COSMIC desktop environment. Built using libcosmic's widget system, it provides a clean, intuitive interface inspired by other popular calendar applications while following COSMIC's design language and responsive layout patterns.
 
 The application will support CalDAV protocol for synchronizing events with calendar servers like Nextcloud, Radicale, and other standard CalDAV-compatible services.
 
@@ -116,7 +116,7 @@ cargo run --release
 
 ## Architecture
 
-Sol follows the **Elm/MVU (Model-View-Update)** architecture pattern, which is standard for libcosmic applications:
+Calendar follows the **Elm/MVU (Model-View-Update)** architecture pattern, which is standard for libcosmic applications:
 
 ### Module Organization
 

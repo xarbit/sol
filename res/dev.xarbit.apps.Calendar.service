@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=dev.xarbit.apps.Calendar
+Exec=/app/bin/xcalendar

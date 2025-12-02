@@ -1,4 +1,4 @@
-# Sol Calendar - Development TODO
+# Calendar - Development TODO
 
 ## Current Sprint: Event Management
 

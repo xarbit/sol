@@ -1,4 +1,4 @@
-//! Logging module - Centralized logging configuration for Sol Calendar.
+//! Logging module - Centralized logging configuration for Calendar.
 //!
 //! This module provides a unified logging setup for the entire application.
 //! It configures the log level, format, and output destination.
@@ -39,7 +39,7 @@ use log::{info, LevelFilter};
 const DEFAULT_LOG_LEVEL: &str = "info";
 
 /// Application name for log prefix
-const APP_NAME: &str = "sol-calendar";
+const APP_NAME: &str = "xcalendar";
 
 /// Initialize the logging system.
 ///
@@ -129,6 +129,6 @@ mod tests {
 
     #[test]
     fn test_app_name() {
-        assert_eq!(APP_NAME, "sol-calendar");
+        assert_eq!(APP_NAME, "xcalendar");
     }
 }

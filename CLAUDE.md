@@ -28,7 +28,7 @@ Always use `--release` flag for performance testing.
 
 ## Architecture
 
-Sol is a calendar application for the COSMIC desktop built with libcosmic (iced-based). It follows the **Elm/MVU (Model-View-Update)** pattern:
+Calendar is a calendar application for the COSMIC desktop built with libcosmic (iced-based). It follows the **Elm/MVU (Model-View-Update)** pattern:
 
 ### Core Flow
 - `app.rs` - Main application state (`CosmicCalendar` struct) implementing `cosmic::Application` trait

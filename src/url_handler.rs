@@ -145,7 +145,7 @@ pub async fn download_calendar(url: &str) -> Result<String, Box<dyn Error>> {
     // Download the calendar
     let response = client
         .get(url)
-        .header("User-Agent", "Sol Calendar/0.1.0")
+        .header("User-Agent", "Calendar/0.1.0")
         .send()
         .await
         .map_err(|e| format!("Failed to download calendar: {}", e))?;

@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>io.github.xarbit.SolCalendar</id>
+  <id>dev.xarbit.apps.Calendar</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0</project_license>
 
-  <name>Sol Calendar</name>
-  <summary>A calendar application for the COSMIC Desktop</summary>
+  <name>Calendar</name>
+  <summary>A calendar for the COSMIC Desktop</summary>
 
   <description>
     <p>
-      Sol Calendar is a modern, intuitive calendar application built for the COSMIC Desktop Environment.
+      Calendar is a modern, intuitive calendar application built for the COSMIC Desktop Environment.
       It provides a clean interface for managing your events and appointments with support for multiple
       calendar sources including local calendars and CalDAV.
     </p>
@@ -25,7 +25,7 @@
     </ul>
   </description>
 
-  <launchable type="desktop-id">io.github.xarbit.SolCalendar.desktop</launchable>
+  <launchable type="desktop-id">dev.xarbit.apps.Calendar.desktop</launchable>
 
   <provides>
     <mediatype>text/calendar</mediatype>

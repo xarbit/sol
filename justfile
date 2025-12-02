@@ -1,5 +1,5 @@
-name := 'sol-calendar'
-appid := 'io.github.xarbit.SolCalendar'
+name := 'xcalendar'
+appid := 'dev.xarbit.apps.Calendar'
 
 rootdir := ''
 prefix := '/usr'
@@ -93,7 +93,7 @@ flatpak-bundle:
 
 # Install standalone Flatpak bundle (.flatpak file)
 flatpak-bundle-install:
-    flatpak install --user sol-calendar.flatpak
+    flatpak install --user dev.xarbit.apps.Calendar.flatpak
 
 # Run Flatpak
 flatpak-run *args:

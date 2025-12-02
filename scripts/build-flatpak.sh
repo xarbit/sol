@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🔧 Building Sol Calendar Flatpak..."
+echo "🔧 Building Calendar Flatpak..."
 echo
 
 # Install runtime if needed
@@ -13,8 +13,8 @@ flatpak install --user -y flathub org.freedesktop.Sdk.Extension.rust-stable//25.
 
 echo
 echo "🏗️  Building Flatpak..."
-flatpak-builder --user --install --force-clean build-dir io.github.xarbit.SolCalendar.yml
+flatpak-builder --user --install --force-clean build-dir dev.xarbit.apps.Calendar.yml
 
 echo
 echo "✅ Build complete!"
-echo "Run with: flatpak run io.github.xarbit.SolCalendar"
+echo "Run with: flatpak run dev.xarbit.apps.Calendar"

@@ -40,9 +40,9 @@ use log::info;
 use std::env;
 use std::path::PathBuf;
 
-/// Sol Calendar - A calendar application for the COSMIC Desktop
+/// Calendar - A calendar application for the COSMIC Desktop
 #[derive(Parser, Debug)]
-#[command(name = "sol-calendar")]
+#[command(name = "xcalendar")]
 #[command(about = "A calendar application for the COSMIC Desktop", long_about = None)]
 struct Cli {
     /// Calendar files to import (.ics files) or URLs to open (webcal://, ics://, calendar://)
@@ -65,7 +65,7 @@ pub fn main() -> cosmic::iced::Result {
     // Initialize centralized logging
     logging::init();
 
-    info!("Sol Calendar starting...");
+    info!("Calendar starting...");
 
     // Parse command-line arguments
     let cli = Cli::parse();

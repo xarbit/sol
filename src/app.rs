@@ -25,9 +25,9 @@ use std::path::PathBuf;
 // Use different APP_ID for development builds to avoid conflicts with installed Flatpak
 // Flatpak builds are detected via FLATPAK_ID environment variable at compile time
 const APP_ID: &str = if option_env!("FLATPAK_ID").is_some() {
-    "io.github.xarbit.SolCalendar"
+    "dev.xarbit.apps.Calendar"
 } else {
-    "io.github.xarbit.SolCalendar.Devel"
+    "dev.xarbit.apps.Calendar.Devel"
 };
 
 /// Command-line flags passed to the application

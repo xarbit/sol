@@ -1,10 +1,10 @@
 #!/bin/bash
 set -e
 
-APP_ID="io.github.xarbit.SolCalendar"
-BUNDLE_FILE="sol-calendar.flatpak"
+APP_ID="dev.xarbit.apps.Calendar"
+BUNDLE_FILE="dev.xarbit.apps.Calendar.flatpak"
 
-echo "📦 Building Sol Calendar standalone Flatpak bundle..."
+echo "📦 Building Calendar standalone Flatpak bundle..."
 echo
 
 # Install runtime if needed
@@ -16,7 +16,7 @@ flatpak install --user -y flathub org.freedesktop.Sdk.Extension.rust-stable//25.
 
 echo
 echo "🏗️  Building Flatpak..."
-flatpak-builder --user --force-clean --repo=flatpak-repo build-dir io.github.xarbit.SolCalendar.yml
+flatpak-builder --user --force-clean --repo=flatpak-repo build-dir dev.xarbit.apps.Calendar.yml
 
 echo
 echo "📦 Creating standalone bundle: $BUNDLE_FILE"
